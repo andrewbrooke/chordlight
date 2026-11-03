@@ -1,10 +1,10 @@
 node_modules/
-dist/
-site/
+/dist/
+/site/
 *.tsbuildinfo
 
 # Output from npm run render and local measurements
-var/
+/var/
 
 *.log
 npm-debug.log*
