@@ -109,13 +109,15 @@ export const KEYS = {
   /** Black key length as a fraction of a white key's. */
   blackRatio: 0.62,
   /** Key length limits in cm; shorter keys would put markers under the black keys. */
-  minLength: 17.5,
+  minLength: 18.5,
   maxLength: 30,
   margin: 0.4,
   /** Front lip depth (the key's visible thickness); a press shrinks it to `pressedLip`. */
-  lipWhite: 0.7,
-  lipBlack: 0.55,
-  pressedLip: 0.3,
+  lipWhite: 0.95,
+  lipBlack: 0.8,
+  pressedLip: 0.2,
+  /** How much a full press darkens the key. */
+  pressDim: 0.4,
   shadow: 0.3,
   /** A backing note's press, as a fraction of a real one. */
   ghost: 0.4,

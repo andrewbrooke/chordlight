@@ -1,5 +1,5 @@
 // Flat, top-down keyboard. Depth is implied by a front lip on every key, plus a lighter top and a
-// drop shadow on black keys; a press shrinks the lip. A light is a rail near the key's front plus
+// drop shadow on black keys; a press shrinks the lip and darkens the key. A light is a rail near the key's front plus
 // a marker for some (a ring on home, an arrow on lean). The stage sets the key length.
 //
 // The mood star shares the dot row: it only shows with no chord sounding, the dots only with one.
@@ -8,7 +8,7 @@ import * as THREE from 'three';
 import type { Light, Lights } from '../theory/guide.js';
 import { pcOf } from '../theory/pitch.js';
 import { COLOURS, GLOW, KEYS } from '../tuning.js';
-import { Label } from './labels.js';
+import { Label, type PixelGrid } from './labels.js';
 import { layoutKeys } from './layout.js';
 import * as shapes from './shapes.js';
 
@@ -25,8 +25,8 @@ const WHITE = new THREE.Color('#ffffff');
 
 /** Positions in cm back from each key's front edge. */
 const SPOTS = {
-  white: { rail: 1.05, label: 3.3, marker: 5.35, next: 6.2 },
-  black: { rail: 0.9, label: 2.2, marker: 3.75, next: 4.75 },
+  white: { rail: 1.3, label: 3.55, marker: 5.6, next: 6.45 },
+  black: { rail: 1.15, label: 2.45, marker: 4, next: 5 },
 };
 
 /** Layer heights: later entries draw on top. */
@@ -117,7 +117,7 @@ class KeyView {
     );
     this.label = new Label(black);
     this.labelMesh = flat(
-      black ? geo.blackLabel : geo.whiteLabel,
+      geo.unit,
       basic('#ffffff', { map: this.label.texture, transparent: true, depthWrite: false }),
       y.label,
     );
@@ -144,7 +144,7 @@ class KeyView {
     if (this.shadow) this.group.add(this.shadow);
   }
 
-  place(length: number): void {
+  place(length: number, grid: PixelGrid): void {
     this.back = -length / 2;
     this.front = this.black ? this.back + length * KEYS.blackRatio : length / 2;
     this.lipFull = this.black ? KEYS.lipBlack : KEYS.lipWhite;
@@ -155,6 +155,7 @@ class KeyView {
     const at = (m: THREE.Object3D, fromFront: number) => (m.position.z = this.front - fromFront);
     at(this.rail, s.rail);
     at(this.labelMesh, s.label);
+    this.fitLabel(grid);
     for (const m of [this.ring, this.arrow]) at(m, s.marker);
     at(this.star, s.next);
     at(this.nextDot, s.next);
@@ -204,7 +205,7 @@ class KeyView {
     this.rail.material.color.copy(this.glow).lerp(WHITE, 0.45 * this.pulse);
     this.rail.material.opacity = rail;
 
-    const dim = 1 - 0.07 * this.press;
+    const dim = 1 - KEYS.pressDim * this.press;
     if (this.top) {
       shade(this.face, COLOURS.ebony, dim);
       shade(this.top, COLOURS.ebonyTop, dim);
@@ -213,6 +214,16 @@ class KeyView {
       shade(this.face, COLOURS.ivory, dim);
       shade(this.lip, COLOURS.ivoryLip, dim);
     }
+  }
+
+  /** One texel per device pixel, with the label's corner on a pixel corner. */
+  private fitLabel(grid: PixelGrid): void {
+    const { w, h } = this.label.fit(shapes.LABEL_WIDTH[this.black ? 'black' : 'white'], grid);
+    const m = this.labelMesh;
+    const x = this.group.position.x;
+    m.scale.set(w / grid.px, h / grid.pz, 1);
+    m.position.x = snap(x, w, grid.x0, grid.px) - x;
+    m.position.z = snap(m.position.z, h, grid.z0, grid.pz);
   }
 
   private layLip(): void {
@@ -232,6 +243,12 @@ class KeyView {
 function span(m: THREE.Object3D, back: number, front: number): void {
   m.position.z = (back + front) / 2;
   m.scale.y = Math.max(0.001, front - back);
+}
+
+/** Moves a centre so a span `size` pixels across starts on a pixel boundary. */
+function snap(centre: number, size: number, origin: number, perCm: number): number {
+  const start = Math.round((centre - origin) * perCm - size / 2);
+  return origin + (start + size / 2) / perCm;
 }
 
 function shade(m: Flat, base: string, dim: number): void {
@@ -258,11 +275,11 @@ export class KeyboardView {
       this.faces.push(key.face);
       this.group.add(key.group);
     }
-    this.place(20);
+    this.place(20, { x0: 0, z0: 0, px: 20, pz: 20 });
   }
 
-  place(length: number): void {
-    for (const key of this.keys.values()) key.place(length);
+  place(length: number, grid: PixelGrid): void {
+    for (const key of this.keys.values()) key.place(length, grid);
   }
 
   setLights(lights: Lights, songHome: number): void {

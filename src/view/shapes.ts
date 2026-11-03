@@ -7,8 +7,6 @@ export interface Geometries {
   shaded: THREE.BufferGeometry;
   whiteRail: THREE.BufferGeometry;
   blackRail: THREE.BufferGeometry;
-  whiteLabel: THREE.BufferGeometry;
-  blackLabel: THREE.BufferGeometry;
   ring: THREE.BufferGeometry;
   arrow: THREE.BufferGeometry;
   star: THREE.BufferGeometry;
@@ -16,6 +14,8 @@ export interface Geometries {
 }
 
 export const LABEL_ASPECT = 1.25;
+/** Label widths in cm. */
+export const LABEL_WIDTH = { white: 1.9, black: 1.15 };
 
 export function build(): Geometries {
   return {
@@ -23,8 +23,6 @@ export function build(): Geometries {
     shaded: shaded(),
     whiteRail: new THREE.PlaneGeometry(1.8, 0.42),
     blackRail: new THREE.PlaneGeometry(0.8, 0.45),
-    whiteLabel: new THREE.PlaneGeometry(1.9, 1.9 * LABEL_ASPECT),
-    blackLabel: new THREE.PlaneGeometry(0.95, 0.95 * LABEL_ASPECT),
     ring: new THREE.RingGeometry(0.36, 0.52, 40),
     arrow: arrow(),
     star: star(),

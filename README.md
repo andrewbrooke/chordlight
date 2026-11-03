@@ -3,6 +3,8 @@
 A browser piano that lights up the notes that fit, so you can write melodies without memorising
 scales.
 
+**Play it at https://andrewbrooke.github.io/chordlight/**
+
 Pick a key, or load a chord progression, and every key shows how it fits the chord that's
 playing. Gold keys are safe to land on, teal keys fit as you pass through, violet keys clash and
 want to move on, and unlit keys are outside the key. A panel next to the keyboard explains why
