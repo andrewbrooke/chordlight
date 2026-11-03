@@ -1,0 +1,17 @@
+node_modules/
+dist/
+site/
+*.tsbuildinfo
+
+# Output from npm run render and local measurements
+var/
+
+*.log
+npm-debug.log*
+
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+Thumbs.db

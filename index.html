@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Chordlight</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <header id="top">
+        <div class="row">
+          <div class="seg" id="mode" role="tablist">
+            <button data-mode="key" role="tab">Key</button>
+            <button data-mode="progression" role="tab">Progression</button>
+          </div>
+          <label
+            >Home
+            <select id="home"></select
+          ></label>
+          <label
+            >Mood
+            <select id="mood"></select
+          ></label>
+          <span id="tuning" class="quiet"></span>
+          <span id="midi" class="quiet"></span>
+          <span class="spacer"></span>
+          <button id="clip" title="Keep the last seconds of playing (Enter)">⏺ Clip</button>
+          <button id="clips-open">Clips</button>
+          <button id="settings-open" title="Settings">⚙</button>
+          <button id="why-open" title="Show or hide the explanations">Why?</button>
+        </div>
+        <div class="row" id="transport">
+          <label
+            >Preset
+            <select id="preset"></select
+          ></label>
+          <button id="play" class="primary" title="Play or stop (Space)">▶ Play</button>
+          <label
+            >BPM <input id="bpm" type="number" min="40" max="220" step="1" />
+            <input id="bpm-slider" type="range" min="40" max="220" step="1"
+          /></label>
+          <label class="check"><input id="countin" type="checkbox" /> count-in</label>
+          <label class="check"><input id="click-on" type="checkbox" /> click</label>
+          <label
+            >Style
+            <select id="style"></select
+          ></label>
+          <label class="check"><input id="bass" type="checkbox" /> bass</label>
+          <button id="edit-open">Edit</button>
+        </div>
+      </header>
+
+      <section id="above">
+        <div id="lane"></div>
+        <div id="editor" hidden>
+          <div class="row">
+            <input id="prog-text" type="text" spellcheck="false" autocomplete="off" />
+            <button id="prog-apply" class="primary">Apply</button>
+            <span id="prog-error" class="error"></span>
+          </div>
+          <div class="row" id="prog-add"></div>
+          <div class="row">
+            <input id="save-name" type="text" placeholder="name your progression" />
+            <button id="save-mine">Save as mine</button>
+            <button id="delete-mine" hidden>Delete this one</button>
+          </div>
+          <p class="quiet">
+            Type numerals (<code>I V vi IV</code>, <code>bVII</code>, <code>ii7</code>,
+            <code>V/vi</code>) or chord names (<code>C G Am F</code>). <code>:2</code> after a chord
+            makes it last two beats.
+          </p>
+        </div>
+        <div id="palette"></div>
+      </section>
+
+      <div id="readout"><span id="now"></span><span id="holding"></span></div>
+      <main id="stage"></main>
+
+      <aside id="why"></aside>
+
+      <footer id="legend">
+        <span class="swatch home">home</span>
+        <span class="swatch land">land</span>
+        <span class="swatch wander">wander</span>
+        <span class="swatch lean">lean</span>
+        <span class="swatch next">next chord</span>
+        <span class="swatch star" id="legend-star">mood note</span>
+        <span class="spacer"></span>
+        <span id="octave" class="quiet"></span>
+        <label
+          >Labels
+          <select id="labels"></select
+        ></label>
+      </footer>
+
+      <div id="clips" class="panel" hidden>
+        <div class="row">
+          <h2>Clips</h2>
+          <span class="spacer"></span>
+          <label
+            >Clip keeps the last
+            <select id="clip-seconds"></select
+          ></label>
+          <button id="clips-close">Close</button>
+        </div>
+        <label class="check"
+          ><input id="clip-backing" type="checkbox" /> play the recorded backing with each
+          clip</label
+        >
+        <p id="clips-note" class="quiet"></p>
+        <ol id="clip-list"></ol>
+      </div>
+
+      <div id="settings" class="panel" hidden>
+        <div class="row">
+          <h2>Settings</h2>
+          <span class="spacer"></span>
+          <button id="settings-close">Close</button>
+        </div>
+        <div class="grid">
+          <label
+            >Keyboard
+            <select id="range"></select
+          ></label>
+          <label
+            >Computer keys
+            <select id="layout"></select
+          ></label>
+          <label class="check"
+            ><input id="caps" type="checkbox" /> show computer keys on the keys</label
+          >
+          <label class="check"><input id="hints" type="checkbox" /> next-note hints</label>
+          <label class="check"
+            ><input id="ghosts" type="checkbox" /> show the backing on the keys</label
+          >
+          <label class="check"
+            ><input id="pedal-reversed" type="checkbox" /> MIDI pedal works backwards</label
+          >
+          <label
+            >Next chord shows
+            <select id="lookahead"></select
+          ></label>
+          <label>Piano <input id="level-piano" type="range" min="0" max="1" step="0.01" /></label>
+          <label
+            >Backing <input id="level-backing" type="range" min="0" max="1" step="0.01"
+          /></label>
+          <label>Bass <input id="level-bass" type="range" min="0" max="1" step="0.01" /></label>
+          <label>Click <input id="level-click" type="range" min="0" max="1" step="0.01" /></label>
+        </div>
+        <p class="quiet">
+          Keys: the letter row <code>Q</code>–<code>]</code> plays the key's notes from home, so
+          <code>Q</code> <code>E</code> <code>T</code> is the home chord; the numbers above fill in
+          the notes between. <code>Z</code>–<code>M</code> hold the key's chords, <code>←</code>
+          <code>→</code> move the octave, <code>Shift</code> is the pedal, <code>Space</code> plays
+          and stops, <code>Enter</code> takes a clip.
+        </p>
+      </div>
+
+      <div id="start">
+        <div class="card">
+          <h1>Chordlight</h1>
+          <p>Lit keys are the notes worth playing next.</p>
+          <ul>
+            <li>
+              <span class="swatch home"></span><span class="swatch land"></span> gold: land here
+            </li>
+            <li><span class="swatch wander"></span> teal: in key, wander through</li>
+            <li><span class="swatch lean"></span> violet: leans; move the way its arrow points</li>
+          </ul>
+          <button id="start-button" class="primary">Click to start</button>
+          <p class="quiet">
+            Play with the <code>Q</code> row: it plays the key's notes, and <code>Q</code>
+            <code>E</code> <code>T</code> is the home chord.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "./node_modules/three/build/three.module.js",
+          "chordlight/": "./dist/"
+        }
+      }
+    </script>
+    <script type="module" src="dist/main.js"></script>
+  </body>
+</html>

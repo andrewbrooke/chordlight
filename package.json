@@ -1,0 +1,34 @@
+{
+  "name": "chordlight",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./*": "./dist/*"
+  },
+  "description": "A browser piano that lights up the notes that fit the chord being played",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.11"
+  },
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "check": "tsc --noEmit",
+    "start": "node server.mjs",
+    "dev": "npm run build && node server.mjs",
+    "smoke": "npm run build && node tools/smoke/run.mjs",
+    "render": "npm run build && node tools/render/render.mjs",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "site": "npm run build && node tools/site/build.mjs"
+  },
+  "dependencies": {
+    "three": "0.185.1"
+  },
+  "devDependencies": {
+    "@types/three": "0.185.4",
+    "prettier": "3.9.6",
+    "typescript": "7.0.2"
+  }
+}

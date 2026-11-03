@@ -1,0 +1,241 @@
+// Preset progressions, written as Roman numerals so they transpose. Each starts on C or A so home
+// is a white key.
+
+import type { MoodId } from '../theory/scales.js';
+import type { Palette } from '../theory/guide.js';
+
+export type Style = 'pad' | 'piano' | 'drive' | 'arp';
+
+export interface Preset {
+  id: string;
+  name: string;
+  group: string;
+  text: string;
+  home: number;
+  mood: MoodId;
+  bpm: number;
+  style: Style;
+  palette?: Palette;
+  lesson: string;
+  heardIn: string[];
+  tip: string;
+}
+
+const C = 0;
+const A = 9;
+
+export const PRESETS: readonly Preset[] = [
+  {
+    id: 'four-chords',
+    name: 'Four Chords',
+    group: 'Pop',
+    text: 'I V vi IV',
+    home: C,
+    mood: 'major',
+    bpm: 92,
+    style: 'piano',
+    lesson: 'The most common loop in pop music.',
+    heardIn: ['Let It Be', "Don't Stop Believin'", 'With or Without You', 'Someone Like You'],
+    tip: 'Hold one note across two chords: E works over C and Am, and C over Am and F.',
+  },
+  {
+    id: 'pop-punk',
+    name: 'Pop-punk',
+    group: 'Pop',
+    text: 'vi IV I V',
+    home: C,
+    mood: 'major',
+    bpm: 160,
+    style: 'drive',
+    lesson: 'Four Chords started on the minor chord, usually played fast.',
+    heardIn: ['Zombie', 'Despacito', 'Save Tonight'],
+    tip: 'At fast tempos, try phrases of two or three notes with rests between them.',
+  },
+  {
+    id: 'fifties',
+    name: 'Fifties',
+    group: 'Pop',
+    text: 'I vi IV V',
+    home: C,
+    mood: 'major',
+    bpm: 76,
+    style: 'arp',
+    lesson: 'The classic doo-wop progression.',
+    heardIn: ['Stand By Me', 'Every Breath You Take', 'Heart and Soul'],
+    tip: 'Over the G chord, play B and let it rise to C as the loop restarts.',
+  },
+  {
+    id: 'canon',
+    name: 'Canon',
+    group: 'Pop',
+    text: 'I:2 V:2 vi:2 iii:2 IV:2 I:2 IV:2 V:2',
+    home: C,
+    mood: 'major',
+    bpm: 80,
+    style: 'arp',
+    lesson: 'Eight chords over a bass line that steps down.',
+    heardIn: ["Pachelbel's Canon", 'Basket Case (a variant)'],
+    tip: 'Walk a melody down with the bass: E, D, C, B, A, G, A, B.',
+  },
+  {
+    id: 'epic-minor',
+    name: 'Epic minor',
+    group: 'Moody',
+    text: 'i bVI bIII bVII',
+    home: A,
+    mood: 'minor',
+    bpm: 84,
+    style: 'pad',
+    lesson:
+      'The chords of Pop-punk with A minor as home. The lit notes are the same; only home changes.',
+    heardIn: [],
+    tip: 'Ending phrases on A sounds sad; ending them on C sounds brighter.',
+  },
+  {
+    id: 'andalusian',
+    name: 'Andalusian',
+    group: 'Moody',
+    text: 'i bVII bVI V',
+    home: A,
+    mood: 'minor',
+    bpm: 100,
+    style: 'arp',
+    lesson: 'Steps down from i to a major V, which brings in G♯ from harmonic minor.',
+    heardIn: ['Hit the Road Jack', 'Runaway'],
+    tip: 'Over the E chord, play G♯ and let it rise to A as the loop restarts.',
+  },
+  {
+    id: 'creep',
+    name: 'Creep',
+    group: 'Moody',
+    text: 'I III IV iv',
+    home: C,
+    mood: 'major',
+    bpm: 92,
+    style: 'arp',
+    lesson: 'Two borrowed chords: E major brings in G♯, and F minor brings in A♭.',
+    heardIn: ['Creep'],
+    tip: 'Play A over F, then A♭ over Fm.',
+  },
+  {
+    id: 'two-five-one',
+    name: 'ii–V–I',
+    group: 'Soul & jazz',
+    text: 'ii7 V7 Imaj7:8',
+    home: C,
+    mood: 'major',
+    bpm: 110,
+    style: 'piano',
+    lesson: 'The most common progression in jazz, with seventh chords throughout.',
+    heardIn: ['Autumn Leaves', 'Fly Me to the Moon'],
+    tip: 'Over G7, find F and let it fall to E when Cmaj7 arrives.',
+  },
+  {
+    id: 'circle',
+    name: 'Circle',
+    group: 'Soul & jazz',
+    text: 'i iv bVII bIII bVI ii° V:8',
+    home: A,
+    mood: 'minor',
+    bpm: 112,
+    style: 'piano',
+    lesson:
+      'The root falls by fifths through every chord in the key, then a borrowed V leads home.',
+    heardIn: ['I Will Survive', 'Autumn Leaves'],
+    tip: 'Repeat one short phrase, moving it down a step on each chord.',
+  },
+  {
+    id: 'royal-road',
+    name: 'Royal Road',
+    group: 'Soul & jazz',
+    text: 'IVmaj7 V7 iii7 vi',
+    home: C,
+    mood: 'major',
+    bpm: 96,
+    style: 'piano',
+    lesson: 'Never lands on I, which keeps it moving forward.',
+    heardIn: ['J-pop and anime openings'],
+    tip: 'Rise through gold notes over the first two chords, then fall over the last two.',
+  },
+  {
+    id: 'two-of-us',
+    name: 'Just the Two of Us',
+    group: 'Soul & jazz',
+    text: 'IVmaj7 III7 vi7 v7:2 I7:2',
+    home: C,
+    mood: 'major',
+    bpm: 92,
+    style: 'pad',
+    lesson: 'A borrowed E7 adds G♯, and Gm7 adds B♭.',
+    heardIn: ['Just the Two of Us'],
+    tip: 'Over E7, land on G♯; over Am7, step up to A.',
+  },
+  {
+    id: 'blues',
+    name: '12-bar blues',
+    group: 'Rock & blues',
+    text: 'I7 I7 I7 I7 IV7 IV7 I7 I7 V7 IV7 I7 V7',
+    home: C,
+    mood: 'mixolydian',
+    bpm: 100,
+    style: 'piano',
+    palette: 'blues',
+    lesson: 'Four bars of I, two of IV, two of I, then V, IV, I and V.',
+    heardIn: ['Johnny B. Goode', 'Hound Dog'],
+    tip: 'E♭ is a blue note: slide from it up to E.',
+  },
+  {
+    id: 'mixolydian-rock',
+    name: 'Mixolydian rock',
+    group: 'Rock & blues',
+    text: 'I bVII IV I',
+    home: C,
+    mood: 'mixolydian',
+    bpm: 104,
+    style: 'drive',
+    lesson: 'Major with a flat seventh (B♭), common in rock.',
+    heardIn: ['Sweet Home Alabama', 'Sympathy for the Devil', 'the Hey Jude coda'],
+    tip: 'Over the C chord, play B♭ in place of B.',
+  },
+  {
+    id: 'mario',
+    name: 'Mario cadence',
+    group: 'Rock & blues',
+    text: 'bVI bVII I:8',
+    home: C,
+    mood: 'major',
+    bpm: 120,
+    style: 'drive',
+    lesson: 'Two borrowed chords stepping up to I.',
+    heardIn: ["Super Mario Bros.' course-clear fanfare"],
+    tip: 'Climb with the chords: C, D, then E as the C chord arrives.',
+  },
+  {
+    id: 'dorian',
+    name: 'Dorian vamp',
+    group: 'Moods',
+    text: 'i7 IV7',
+    home: A,
+    mood: 'dorian',
+    bpm: 104,
+    style: 'piano',
+    lesson: 'Minor with a raised sixth (F♯), which sounds less sad than natural minor.',
+    heardIn: ['Oye Como Va', 'Evil Ways'],
+    tip: 'Over D7, hold F♯ (the note that defines Dorian), then step down to E.',
+  },
+  {
+    id: 'lydian',
+    name: 'Lydian float',
+    group: 'Moods',
+    text: 'I II',
+    home: C,
+    mood: 'lydian',
+    bpm: 80,
+    style: 'pad',
+    lesson: 'Major with a raised fourth (F♯).',
+    heardIn: [],
+    tip: 'Hold F♯ over the C chord to hear the Lydian sound.',
+  },
+];
+
+export const presetOf = (id: string): Preset | undefined => PRESETS.find((p) => p.id === id);

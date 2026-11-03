@@ -1,0 +1,304 @@
+// Flat, top-down keyboard. Depth is implied by a front lip on every key, plus a lighter top and a
+// drop shadow on black keys; a press shrinks the lip. A light is a rail near the key's front plus
+// a marker for some (a ring on home, an arrow on lean). The stage sets the key length.
+//
+// The mood star shares the dot row: it only shows with no chord sounding, the dots only with one.
+
+import * as THREE from 'three';
+import type { Light, Lights } from '../theory/guide.js';
+import { pcOf } from '../theory/pitch.js';
+import { COLOURS, GLOW, KEYS } from '../tuning.js';
+import { Label } from './labels.js';
+import { layoutKeys } from './layout.js';
+import * as shapes from './shapes.js';
+
+export type PressSource = 'user' | 'clip';
+
+const LIGHT_COLOUR: Record<Light, THREE.Color> = {
+  home: new THREE.Color(COLOURS.home),
+  land: new THREE.Color(COLOURS.land),
+  wander: new THREE.Color(COLOURS.wander),
+  lean: new THREE.Color(COLOURS.lean),
+  out: new THREE.Color('#000000'),
+};
+const WHITE = new THREE.Color('#ffffff');
+
+/** Positions in cm back from each key's front edge. */
+const SPOTS = {
+  white: { rail: 1.05, label: 3.3, marker: 5.35, next: 6.2 },
+  black: { rail: 0.9, label: 2.2, marker: 3.75, next: 4.75 },
+};
+
+/** Layer heights: later entries draw on top. */
+const Y = {
+  white: { face: 0, lip: 0.01, rail: 0.02, label: 0.03, marker: 0.04 },
+  black: { shadow: 0.1, face: 0.11, top: 0.12, lip: 0.13, rail: 0.14, label: 0.15, marker: 0.16 },
+};
+
+type Flat = THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>;
+
+function flat(geo: THREE.BufferGeometry, material: THREE.MeshBasicMaterial, y: number): Flat {
+  const m = new THREE.Mesh(geo, material);
+  m.rotation.x = -Math.PI / 2;
+  m.position.y = y;
+  return m;
+}
+
+function basic(colour: string, extra: THREE.MeshBasicMaterialParameters = {}) {
+  return new THREE.MeshBasicMaterial({ color: colour, toneMapped: false, ...extra });
+}
+
+class KeyView {
+  readonly group = new THREE.Group();
+  readonly face: Flat;
+  readonly label: Label;
+  private readonly top: Flat | null;
+  private readonly lip: Flat;
+  private readonly shadow: Flat | null;
+  private readonly rail: Flat;
+  private readonly ring: Flat;
+  private readonly arrow: Flat;
+  private readonly star: Flat;
+  private readonly nextDot: Flat;
+  private readonly homeDot: Flat;
+  private readonly labelMesh: Flat;
+
+  private readonly glow = new THREE.Color();
+  private readonly targetGlow = new THREE.Color();
+  private railLevel = 0;
+  private targetRail = 0;
+  private press = 0;
+  private pulse = 0;
+  private readonly pressed = new Set<PressSource>();
+  private ghosts = 0;
+  private front = 0;
+  private back = 0;
+  private lipFull = 0;
+
+  constructor(
+    readonly midi: number,
+    readonly black: boolean,
+    x: number,
+    geo: shapes.Geometries,
+  ) {
+    this.group.position.x = x;
+    const y = black ? Y.black : Y.white;
+    const width = black ? KEYS.black : KEYS.white - KEYS.gap;
+
+    this.face = flat(
+      black ? geo.unit : geo.shaded,
+      basic(black ? COLOURS.ebony : COLOURS.ivory, { vertexColors: !black }),
+      y.face,
+    );
+    this.face.scale.x = width;
+    this.face.userData['midi'] = midi;
+    this.lip = flat(geo.unit, basic(black ? COLOURS.ebonyLip : COLOURS.ivoryLip), y.lip);
+    this.lip.scale.x = black ? width - 0.3 : width;
+    this.top = black
+      ? flat(geo.shaded, basic(COLOURS.ebonyTop, { vertexColors: true }), Y.black.top)
+      : null;
+    if (this.top) this.top.scale.x = width - 0.36;
+    this.shadow = black
+      ? flat(
+          geo.unit,
+          basic('#000000', { transparent: true, opacity: 0.35, depthWrite: false }),
+          Y.black.shadow,
+        )
+      : null;
+    if (this.shadow) {
+      this.shadow.scale.x = width + 0.1;
+      this.shadow.position.x = KEYS.shadow * 0.6;
+    }
+
+    this.rail = flat(
+      black ? geo.blackRail : geo.whiteRail,
+      basic('#000000', { transparent: true, opacity: 0, depthWrite: false }),
+      y.rail,
+    );
+    this.label = new Label(black);
+    this.labelMesh = flat(
+      black ? geo.blackLabel : geo.whiteLabel,
+      basic('#ffffff', { map: this.label.texture, transparent: true, depthWrite: false }),
+      y.label,
+    );
+    const marker = (g: THREE.BufferGeometry, colour: string, dx = 0) => {
+      const m = flat(g, basic(colour), y.marker);
+      m.position.x = dx;
+      m.visible = false;
+      if (black) m.scale.setScalar(0.75);
+      return m;
+    };
+    this.ring = marker(geo.ring, COLOURS.home);
+    this.arrow = marker(geo.arrow, COLOURS.lean);
+    this.star = marker(geo.star, COLOURS.star);
+    this.nextDot = marker(
+      geo.dot,
+      black ? COLOURS.nextOnBlack : COLOURS.nextOnWhite,
+      black ? 0 : -0.45,
+    );
+    this.homeDot = marker(geo.dot, COLOURS.home, black ? 0 : 0.45);
+
+    this.group.add(this.face, this.lip, this.rail, this.labelMesh);
+    this.group.add(this.ring, this.arrow, this.star, this.nextDot, this.homeDot);
+    if (this.top) this.group.add(this.top);
+    if (this.shadow) this.group.add(this.shadow);
+  }
+
+  place(length: number): void {
+    this.back = -length / 2;
+    this.front = this.black ? this.back + length * KEYS.blackRatio : length / 2;
+    this.lipFull = this.black ? KEYS.lipBlack : KEYS.lipWhite;
+    span(this.face, this.back, this.front);
+    if (this.top) span(this.top, this.back + 0.1, this.front - this.lipFull);
+    if (this.shadow) span(this.shadow, this.back, this.front + KEYS.shadow);
+    const s = this.black ? SPOTS.black : SPOTS.white;
+    const at = (m: THREE.Object3D, fromFront: number) => (m.position.z = this.front - fromFront);
+    at(this.rail, s.rail);
+    at(this.labelMesh, s.label);
+    for (const m of [this.ring, this.arrow]) at(m, s.marker);
+    at(this.star, s.next);
+    at(this.nextDot, s.next);
+    at(this.homeDot, this.black ? s.next + 0.75 : s.next);
+    this.layLip();
+  }
+
+  setLight(light: Light, leanTo: number, moodNote: boolean, songHome: boolean): void {
+    this.targetGlow.copy(light === 'out' ? this.glow : LIGHT_COLOUR[light]);
+    this.targetRail = GLOW[light];
+    this.ring.visible = light === 'home';
+    this.arrow.visible = light === 'lean' && leanTo !== 0;
+    this.arrow.scale.x = Math.abs(this.arrow.scale.x) * (leanTo < 0 ? -1 : 1);
+    this.star.visible = moodNote && light !== 'home';
+    this.homeDot.visible = songHome;
+  }
+
+  setNext(on: boolean): void {
+    this.nextDot.visible = on;
+  }
+
+  setPressed(source: PressSource, down: boolean): void {
+    if (down) this.pressed.add(source);
+    else this.pressed.delete(source);
+  }
+
+  ghost(delta: number): void {
+    this.ghosts = Math.max(0, this.ghosts + delta);
+  }
+
+  flash(): void {
+    this.pulse = 1;
+  }
+
+  update(dt: number): void {
+    const target = this.pressed.size > 0 ? 1 : this.ghosts > 0 ? KEYS.ghost : 0;
+    const tau = target > this.press ? KEYS.down : KEYS.up;
+    this.press += (target - this.press) * (1 - Math.exp(-dt / tau));
+    this.layLip();
+
+    const k = 1 - Math.exp(-dt / KEYS.fade);
+    this.glow.lerp(this.targetGlow, k);
+    this.railLevel += (this.targetRail - this.railLevel) * k;
+    this.pulse *= Math.exp(-dt / (KEYS.pulse / 3));
+
+    const rail = Math.min(1, this.railLevel * (1 + 0.25 * this.press) + 0.5 * this.pulse);
+    this.rail.material.color.copy(this.glow).lerp(WHITE, 0.45 * this.pulse);
+    this.rail.material.opacity = rail;
+
+    const dim = 1 - 0.07 * this.press;
+    if (this.top) {
+      shade(this.face, COLOURS.ebony, dim);
+      shade(this.top, COLOURS.ebonyTop, dim);
+      shade(this.lip, COLOURS.ebonyLip, dim);
+    } else {
+      shade(this.face, COLOURS.ivory, dim);
+      shade(this.lip, COLOURS.ivoryLip, dim);
+    }
+  }
+
+  private layLip(): void {
+    const h = this.lipFull * (1 - (1 - KEYS.pressedLip) * this.press);
+    span(this.lip, this.front - h, this.front);
+  }
+
+  dispose(): void {
+    this.label.texture.dispose();
+    this.group.traverse((o) => {
+      if (o instanceof THREE.Mesh) (o.material as THREE.Material).dispose();
+    });
+  }
+}
+
+/** Stretches a flat unit plane between two z values. */
+function span(m: THREE.Object3D, back: number, front: number): void {
+  m.position.z = (back + front) / 2;
+  m.scale.y = Math.max(0.001, front - back);
+}
+
+function shade(m: Flat, base: string, dim: number): void {
+  m.material.color.set(base).multiplyScalar(dim);
+}
+
+export class KeyboardView {
+  readonly group = new THREE.Group();
+  readonly width: number;
+  readonly faces: THREE.Object3D[] = [];
+  private readonly keys = new Map<number, KeyView>();
+  private readonly geo: shapes.Geometries;
+
+  constructor(
+    readonly lo: number,
+    readonly hi: number,
+  ) {
+    const { spots, width } = layoutKeys(lo, hi);
+    this.width = width;
+    this.geo = shapes.build();
+    for (const spot of spots) {
+      const key = new KeyView(spot.midi, spot.black, spot.x, this.geo);
+      this.keys.set(spot.midi, key);
+      this.faces.push(key.face);
+      this.group.add(key.group);
+    }
+    this.place(20);
+  }
+
+  place(length: number): void {
+    for (const key of this.keys.values()) key.place(length);
+  }
+
+  setLights(lights: Lights, songHome: number): void {
+    for (const key of this.keys.values()) {
+      const pc = pcOf(key.midi);
+      key.setLight(lights.light[pc]!, lights.leanTo[pc]!, lights.moodNote === pc, songHome === pc);
+    }
+  }
+
+  setLabels(text: (midi: number) => [string, string]): void {
+    for (const key of this.keys.values()) key.label.set(...text(key.midi));
+  }
+
+  /** null clears the marks. */
+  setNext(has: readonly boolean[] | null): void {
+    for (const key of this.keys.values()) key.setNext(has?.[pcOf(key.midi)] === true);
+  }
+
+  press(midi: number, source: PressSource, down: boolean): void {
+    this.keys.get(midi)?.setPressed(source, down);
+  }
+
+  ghost(midi: number, delta: number): void {
+    this.keys.get(midi)?.ghost(delta);
+  }
+
+  flash(midi: number): void {
+    this.keys.get(midi)?.flash();
+  }
+
+  update(dt: number): void {
+    for (const key of this.keys.values()) key.update(dt);
+  }
+
+  dispose(): void {
+    for (const key of this.keys.values()) key.dispose();
+    shapes.dispose(this.geo);
+  }
+}
