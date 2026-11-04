@@ -139,6 +139,8 @@ export const KEYS = {
 
 export const COLOURS = {
   home: '#ffd66b',
+  /** Home on ivory: `home` there is 1.2:1, this is 3.1:1. */
+  homeOnWhite: '#b37a00',
   land: '#eaa53c',
   wander: '#33c7b5',
   lean: '#a87cff',

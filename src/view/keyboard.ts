@@ -21,6 +21,10 @@ const LIGHT_COLOUR: Record<Light, THREE.Color> = {
   lean: new THREE.Color(COLOURS.lean),
   out: new THREE.Color('#000000'),
 };
+const LIGHT_COLOUR_ON_WHITE: Record<Light, THREE.Color> = {
+  ...LIGHT_COLOUR,
+  home: new THREE.Color(COLOURS.homeOnWhite),
+};
 const WHITE = new THREE.Color('#ffffff');
 
 /** Positions in cm back from each key's front edge. */
@@ -62,6 +66,7 @@ class KeyView {
   private readonly nextDot: Flat;
   private readonly homeDot: Flat;
   private readonly labelMesh: Flat;
+  private readonly lights: Record<Light, THREE.Color>;
 
   private readonly glow = new THREE.Color();
   private readonly targetGlow = new THREE.Color();
@@ -82,6 +87,7 @@ class KeyView {
     geo: shapes.Geometries,
   ) {
     this.group.position.x = x;
+    this.lights = black ? LIGHT_COLOUR : LIGHT_COLOUR_ON_WHITE;
     const y = black ? Y.black : Y.white;
     const width = black ? KEYS.black : KEYS.white - KEYS.gap;
 
@@ -128,7 +134,8 @@ class KeyView {
       if (black) m.scale.setScalar(0.75);
       return m;
     };
-    this.ring = marker(geo.ring, COLOURS.home);
+    const home = black ? COLOURS.home : COLOURS.homeOnWhite;
+    this.ring = marker(geo.ring, home);
     this.arrow = marker(geo.arrow, COLOURS.lean);
     this.star = marker(geo.star, COLOURS.star);
     this.nextDot = marker(
@@ -136,7 +143,7 @@ class KeyView {
       black ? COLOURS.nextOnBlack : COLOURS.nextOnWhite,
       black ? 0 : -0.45,
     );
-    this.homeDot = marker(geo.dot, COLOURS.home, black ? 0 : 0.45);
+    this.homeDot = marker(geo.dot, home, black ? 0 : 0.45);
 
     this.group.add(this.face, this.lip, this.rail, this.labelMesh);
     this.group.add(this.ring, this.arrow, this.star, this.nextDot, this.homeDot);
@@ -164,7 +171,7 @@ class KeyView {
   }
 
   setLight(light: Light, leanTo: number, moodNote: boolean, songHome: boolean): void {
-    this.targetGlow.copy(light === 'out' ? this.glow : LIGHT_COLOUR[light]);
+    this.targetGlow.copy(light === 'out' ? this.glow : this.lights[light]);
     this.targetRail = GLOW[light];
     this.ring.visible = light === 'home';
     this.arrow.visible = light === 'lean' && leanTo !== 0;

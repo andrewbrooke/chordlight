@@ -43,16 +43,15 @@ function shaded(): THREE.BufferGeometry {
   return g;
 }
 
-/** Points along +x; flipped to point left. */
+/** A chevron like `>`, pointing along +x; flipped, it reads `<`. Stroked as heavily as the ring. */
 function arrow(): THREE.BufferGeometry {
   const s = new THREE.Shape();
-  s.moveTo(-0.5, 0.13);
-  s.lineTo(0.1, 0.13);
-  s.lineTo(0.1, 0.32);
-  s.lineTo(0.52, 0);
-  s.lineTo(0.1, -0.32);
-  s.lineTo(0.1, -0.13);
-  s.lineTo(-0.5, -0.13);
+  s.moveTo(-0.12, 0.42);
+  s.lineTo(0.3, 0);
+  s.lineTo(-0.12, -0.42);
+  s.lineTo(-0.34, -0.42);
+  s.lineTo(0.08, 0);
+  s.lineTo(-0.34, 0.42);
   s.closePath();
   return new THREE.ShapeGeometry(s);
 }

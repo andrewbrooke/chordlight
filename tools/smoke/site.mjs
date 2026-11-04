@@ -23,8 +23,10 @@ try {
       `import map entry ${name} points at a missing ${target}`,
     );
   }
-  for (const [, attr, path] of html.matchAll(/\s(src|href)="([^"]+)"/g)) {
+  for (const [, tag, attr, path] of html.matchAll(/<(\w+)[^>]*?\s(src|href)="([^"]+)"/g)) {
     check(!path.startsWith('/'), `${attr}="${path}" is root-relative`);
+    // A link out is somewhere the reader can go, not something the page loads.
+    if (tag === 'a' && path.startsWith('https://')) continue;
     check(existsSync(resolve(out, path)), `${attr}="${path}" is missing from the site`);
   }
   check(
