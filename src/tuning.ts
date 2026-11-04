@@ -68,6 +68,11 @@ export const PLAY = {
   highestBase: 84,
 };
 
+export const POINTER = {
+  /** Seconds a hovered key stays hovered after the pointer leaves it, to bridge the gaps. */
+  hoverLinger: 0.15,
+};
+
 export const TIMING = {
   /** Scheduler interval and lookahead, in seconds. */
   tick: 0.025,
@@ -94,6 +99,8 @@ export const BACKING = {
   /** Velocity written to MIDI for the synth parts (pad, drive, bass), which have levels instead. */
   heldVelocity: 0.6,
   droneLevel: 0.09,
+  /** Fade time constant, in seconds, when a clicked or held chord replaces the one sounding. */
+  swapCut: 0.02,
 };
 
 export const CLIPS = {
@@ -156,3 +163,38 @@ export const COLOURS = {
 };
 
 export const GLOW = { home: 1, land: 0.85, wander: 0.7, lean: 0.75, out: 0 };
+
+/** Sheet music from clips (clips/score.ts, engrave.ts). Lengths are in beats, sizes in points. */
+export const NOTATION = {
+  /** Where an onset may snap, coarsest first, each with how far off it (in beats) it may be played. */
+  snaps: [
+    [1, 0.17],
+    [0.5, 0.1],
+    [0.25, 0.125],
+  ] as const,
+  /** Without a backing the tempo is a guess, so nothing finer than eighths. */
+  looseSnaps: [
+    [1, 0.17],
+    [0.5, 0.25],
+  ] as const,
+  /** Notes struck within this many seconds of each other are one chord. */
+  together: 0.04,
+  /** The most a clip's typical lateness, in beats, is taken off before snapping. */
+  maxLag: 0.15,
+  /** A gap up to this long before the next note is closed up, so short playing isn't rests. */
+  fillGap: 0.5,
+  /** Staff space, A4 page, and margin. */
+  space: 6,
+  page: [595.28, 841.89] as const,
+  margin: 48,
+};
+
+/** The first-run tour (ui/tour.ts), in px and seconds. */
+export const TOUR = {
+  /** Pause after a step's action is done, so its effect is seen before the card moves on. */
+  advanceDelay: 0.9,
+  /** Spotlight padding round its target, the card's distance from it, and from the window edge. */
+  pad: 6,
+  gap: 10,
+  margin: 10,
+};

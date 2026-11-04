@@ -1,6 +1,7 @@
 import type { App } from '../app.js';
 import { type Clip, clipFromJson, clipToJson } from '../clips/file.js';
 import { clipToMidi } from '../clips/midifile.js';
+import { clipToPdf } from '../clips/sheet.js';
 import { ClipShelf, newId } from '../clips/shelf.js';
 import type { Binding } from '../input/midi.js';
 import type { MidiButton } from '../settings.js';
@@ -145,6 +146,15 @@ export function bindClips(app: App): void {
           download(`${fileName(clip)}.mid`, 'audio/midi', clipToMidi(clip));
           midi.blur();
         });
+        const sheet = el('button', {
+          text: 'PDF',
+          title: 'Save as sheet music, snapped to written note lengths',
+        });
+        sheet.addEventListener('click', () => {
+          const pdf = clipToPdf(clip);
+          if (pdf) download(`${fileName(clip)}.pdf`, 'application/pdf', pdf);
+          sheet.blur();
+        });
         const when = new Date(clip.created).toLocaleString([], {
           month: 'short',
           day: 'numeric',
@@ -162,6 +172,7 @@ export function bindClips(app: App): void {
           ]),
           json,
           midi,
+          sheet,
           del,
         ]);
       }),

@@ -6,6 +6,7 @@ import { bindControls } from './ui/controls.js';
 import { $ } from './ui/dom.js';
 import { bindLane } from './ui/lane.js';
 import { bindPalette } from './ui/palette.js';
+import { bindTour, markTourSeen, startTour, tourSeen } from './ui/tour.js';
 import { bindWhy } from './ui/why.js';
 
 const app = new App($('#stage'));
@@ -14,13 +15,13 @@ bindLane(app);
 bindPalette(app);
 bindWhy(app);
 bindClips(app);
+bindTour(app);
 
-// Audio and MIDI can only start from a user gesture, hence the start overlay.
-const start = $('#start');
-const begin = () => {
-  app.startAudio();
-  start.remove();
-  window.removeEventListener('keydown', begin);
+// A first visit gets the start card, which offers the tour; any key takes it too, except Esc.
+// After that the page opens straight to the piano. Audio is made at once so the piano tunes in
+// the background, but the browser holds it suspended until the first click or key press.
+const firstVisit = !tourSeen();
+const listenToMidi = () =>
   void attachMidi(
     {
       noteOn: (m, v) => app.noteOn(m, app.s.midiFull ? PLAY.midiFull : v),
@@ -34,6 +35,33 @@ const begin = () => {
     },
     () => app.s.pedalReversed,
   );
-};
-$('#start-button').addEventListener('click', begin);
-window.addEventListener('keydown', begin);
+
+if (firstVisit) {
+  const start = $('#start');
+  start.hidden = false;
+  $('#start-button').textContent = 'Start, with a quick tour';
+  $('#start-plain').hidden = false;
+  const begin = (tour: boolean) => {
+    app.startAudio();
+    start.remove();
+    window.removeEventListener('keydown', onKey);
+    if (tour) startTour(app);
+    else markTourSeen();
+    listenToMidi();
+  };
+  const onKey = (e: KeyboardEvent) => begin(e.key !== 'Escape');
+  $('#start-button').addEventListener('click', () => begin(true));
+  $('#start-plain').addEventListener('click', () => begin(false));
+  window.addEventListener('keydown', onKey);
+} else {
+  $('#start').remove();
+  app.startAudio();
+  listenToMidi();
+  const wake = () => {
+    app.startAudio();
+    window.removeEventListener('pointerdown', wake, true);
+    window.removeEventListener('keydown', wake, true);
+  };
+  window.addEventListener('pointerdown', wake, true);
+  window.addEventListener('keydown', wake, true);
+}

@@ -5,7 +5,19 @@ import { nameOf } from '../theory/pitch.js';
 import { moodOf, type MoodId, spellKey } from '../theory/scales.js';
 import { CLIPS, TIMING } from '../tuning.js';
 import type { Layout } from '../input/layouts.js';
-import { $, onPick, onToggle, options } from './dom.js';
+import { $, el, onPick, onToggle, options } from './dom.js';
+
+/** What each layout's rows play; `x` is a key cap. */
+const LAYOUT_HELP: Record<Layout, string> = {
+  key: "the letter row `Q`–`]` plays the key's notes from home, so `Q` `E` `T` is the home chord; the numbers above fill in the notes between.",
+  piano:
+    'the letter row `Q`–`]` plays the white keys from C, so `Q` `E` `T` is C major; the numbers above play the black keys between.',
+  rows: 'every key is a half step: the letter row `Q`–`]` plays C up to B, and the number row `1`–`=` carries on an octave higher.',
+};
+
+/** Text with `x` spans set as code. */
+const withCaps = (text: string): (Node | string)[] =>
+  text.split('`').map((part, i) => (i % 2 ? el('code', { text: part }) : part));
 
 const MOOD_ORDER: MoodId[] = ['major', 'minor', 'lydian', 'mixolydian', 'dorian', 'phrygian'];
 const MODE_LABEL = (id: MoodId) => {
@@ -161,6 +173,7 @@ export function bindControls(app: App): void {
     labels.value = s.labels;
     range.value = String(s.range);
     layout.value = s.keyLayout;
+    $('#layout-help').replaceChildren(...withCaps(LAYOUT_HELP[s.keyLayout]));
     $<HTMLInputElement>('#caps').checked = s.caps;
     $<HTMLInputElement>('#hints').checked = s.hints;
     $<HTMLInputElement>('#ghosts').checked = s.ghosts;
@@ -182,7 +195,11 @@ export function bindControls(app: App): void {
   const tuning = $('#tuning');
   const midi = $('#midi');
   app.on('audio', () => {
-    tuning.textContent = app.tuned < 1 ? `tuning the piano… ${Math.round(app.tuned * 100)}%` : '';
+    if (app.audio?.engine.ctx.state === 'suspended') {
+      tuning.textContent = 'click or press any key to turn the sound on';
+    } else {
+      tuning.textContent = app.tuned < 1 ? `tuning the piano… ${Math.round(app.tuned * 100)}%` : '';
+    }
     midi.textContent = app.midi;
   });
 }

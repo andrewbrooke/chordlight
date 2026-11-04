@@ -25,9 +25,13 @@ each note is lit the way it is.
   without the backing) or delete it. Your MIDI keyboard's transport buttons can be learned for
   recording, clipping, playing and pausing the progression. Save a clip as JSON
   (everything it holds, and importable again) or as a MIDI file for a DAW or notation program,
-  with the backing on its own tracks and the chord names as markers.
+  with the backing on its own tracks and the chord names as markers, or as sheet music (PDF): what
+  you played snapped to written note lengths on the backing's beat, on a grand staff in the key,
+  with the chord names above.
 - **Synthesised piano:** no samples to download. All sound is generated in the browser.
 - **Input:** computer keyboard, mouse or touch, and MIDI keyboards.
+- **A first-visit tour** of the basics, finished mostly by playing. Skip it from the start screen
+  or at any step with `Esc`, and replay it from Settings.
 
 ## Requirements
 

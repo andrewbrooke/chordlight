@@ -9,8 +9,8 @@ import type { Engine } from './engine.js';
 const hz = (midi: number): number => 440 * Math.pow(2, (midi - 69) / 12);
 
 export interface Held {
-  /** Cuts the note short. A note that hasn't started yet never plays. */
-  stop(at: number): void;
+  /** Cuts the note short, fading over `tau` if given. A note not yet started never plays. */
+  stop(at: number, tau?: number): void;
 }
 
 /** Fades a gain to zero from `at`, starting at whatever level it has reached. */
@@ -26,14 +26,14 @@ export function cut(gain: AudioParam, at: number, tau: number): void {
 function handle(oscs: OscillatorNode[], env: GainNode, start: number, tau: number): Held {
   oscs[0]!.onended = () => env.disconnect();
   return {
-    stop(at: number) {
+    stop(at: number, fade = tau) {
       if (at <= start) {
         // Not started yet: stopping at its own start time means it never plays.
         for (const o of oscs) o.stop(start);
         return;
       }
-      cut(env.gain, at, tau);
-      for (const o of oscs) o.stop(at + tau * 8);
+      cut(env.gain, at, fade);
+      for (const o of oscs) o.stop(at + fade * 8);
     },
   };
 }

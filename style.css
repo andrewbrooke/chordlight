@@ -181,6 +181,11 @@ button:hover {
   border-color: #5a4a3d;
 }
 
+button.icon {
+  min-width: 2.1em;
+  font-weight: 700;
+}
+
 button.primary {
   background: #3d2f1c;
   border-color: #7a5a2a;
@@ -192,7 +197,7 @@ button:disabled {
 }
 
 input[type='number'] {
-  width: 4.2em;
+  width: 5.4em;
 }
 
 input[type='range'] {
@@ -369,6 +374,17 @@ body.mode-progression #palette {
   margin: 0 0 6px;
 }
 
+/* Three lines, the longest a note's sentence runs in the side panel, so hovering never moves
+   what's below. */
+#why .note {
+  min-height: calc(3 * 1.45em);
+}
+
+/* Soft, but not .quiet: its smaller font would shrink the em the height is measured in. */
+#why .note.empty {
+  color: var(--soft);
+}
+
 #why .big {
   font-size: 17px;
   font-weight: 600;
@@ -395,7 +411,6 @@ body.mode-progression #palette {
   height: 6px;
   border-radius: 3px;
   background: var(--c);
-  box-shadow: 0 0 8px var(--c);
 }
 
 .swatch.home {
@@ -431,7 +446,6 @@ body.mode-progression #palette {
   height: 13px;
   border-radius: 3px;
   background: radial-gradient(circle, #141210 0 30%, #f1ebdf 36%);
-  box-shadow: none;
 }
 
 .swatch.star::before {
@@ -439,7 +453,6 @@ body.mode-progression #palette {
   width: auto;
   height: auto;
   background: none;
-  box-shadow: none;
   color: #fff1c4;
 }
 
@@ -558,6 +571,10 @@ body.mode-progression #palette {
   z-index: 10;
 }
 
+#start[hidden] {
+  display: none;
+}
+
 #start .card {
   max-width: 380px;
   padding: 22px 26px;
@@ -592,6 +609,56 @@ body.mode-progression #palette {
   font-size: 15px;
 }
 
+#start button + button {
+  margin-top: 8px;
+}
+
+/* First-run tour. The ring's shadow dims everything but its target; clicks pass through it. */
+
+.tour-ring {
+  position: fixed;
+  z-index: 8;
+  pointer-events: none;
+  border: 2px solid var(--home);
+  border-radius: 10px;
+  box-shadow: 0 0 0 100vmax #0d0b0999;
+  transition:
+    left 0.25s,
+    top 0.25s,
+    width 0.25s,
+    height 0.25s;
+}
+
+.tour-card {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 9;
+  width: min(300px, calc(100vw - 20px));
+  padding: 12px 14px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+  box-shadow: 0 12px 40px #000a;
+}
+
+.tour-card.done {
+  border-color: var(--wander);
+}
+
+.tour-card h2 {
+  margin: 2px 0 6px;
+  font-size: 16px;
+}
+
+.tour-card p {
+  margin: 0 0 8px;
+}
+
+.tour-card .row {
+  margin: 4px 0 0;
+}
+
 @media (max-width: 860px) {
   #app {
     grid-template-columns: minmax(0, 1fr);
@@ -612,6 +679,10 @@ body.mode-progression #palette {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .tour-ring {
+    transition: none;
+  }
+
   .card.current {
     box-shadow: 0 0 0 1px var(--home) inset;
   }

@@ -93,6 +93,8 @@ export class App {
   private readonly held = new Map<number, number>();
   private readonly listeners = new Map<Event, (() => void)[]>();
   private drone: { held: Held; midi: number }[] = [];
+  /** The chord a lane card plays when clicked. */
+  private preview: Held[] = [];
   private signature = '';
   private nextSignature = '';
   private timed: Timed[] = [];
@@ -122,6 +124,7 @@ export class App {
       noteOn: (m) => this.noteOn(m),
       noteOff: (m) => this.noteOff(m),
       hover: (m) => {
+        if (m === this.hover) return;
         this.hover = m;
         this.emit('hover');
       },
@@ -161,6 +164,7 @@ export class App {
       if (this.s.ghosts)
         this.timed.push({ midi, start, end, ghost: true, owner: 'live', on: false });
     };
+    engine.ctx.onstatechange = () => this.emit('audio');
     transport.onStop = () => this.emit('settings');
     transport.onChange = () => this.recordBacking();
     this.audio = { engine, piano, backing, transport };
@@ -372,7 +376,10 @@ export class App {
     const { transport } = this.startAudio();
     // From a pause, Play starts again from the top; Pause is what resumes.
     if (transport.playing) transport.stop();
-    else if (this.steps.length > 0) transport.start();
+    else if (this.steps.length > 0) {
+      this.stopPreview();
+      transport.start();
+    }
     this.emit('settings');
   }
 
@@ -398,8 +405,15 @@ export class App {
     const step = this.steps[index];
     if (!step || this.audio?.transport.playing) return;
     const { engine } = this.startAudio();
+    this.stopPreview();
     const notes = voice(step.chord, null, BACKING.chordLo, BACKING.chordHi);
-    for (const m of notes) pad(engine, m, engine.now, BACKING.padLevel, engine.now + 1.4);
+    this.preview = notes.map((m) => pad(engine, m, engine.now, BACKING.padLevel, engine.now + 1.4));
+  }
+
+  private stopPreview(): void {
+    const now = this.audio?.engine.now ?? 0;
+    for (const h of this.preview) h.stop(now, BACKING.swapCut);
+    this.preview = [];
   }
 
   /** Z–M hold the key's chords I–vii° while pressed (Key mode only). */
@@ -427,7 +441,8 @@ export class App {
     const audio = chord ? this.startAudio() : this.audio;
     const now = audio?.engine.now ?? 0;
     for (const d of this.drone) {
-      d.held.stop(now);
+      // Straight into the next chord, the old one is cut rather than left to ring under it.
+      d.held.stop(now, chord ? BACKING.swapCut : undefined);
       this.keyboard.ghost(d.midi, -1);
       this.remember({ t: now, on: false, midi: d.midi, vel: 0, voice: 'pad' });
     }

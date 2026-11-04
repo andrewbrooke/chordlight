@@ -25,10 +25,9 @@ export function bindWhy(app: App): void {
     }
 
     const note = app.hover ?? app.last;
-    if (note !== null) {
-      h(app.hover !== null ? 'Under your pointer' : 'The last note you played');
-      p(noteSentence(pcOf(note), app.key, app.lights));
-    }
+    h(app.hover !== null || note === null ? 'Under your pointer' : 'The last note you played');
+    if (note === null) p('Point at a key, or play one, to read about it.', 'note empty');
+    else p(noteSentence(pcOf(note), app.key, app.lights), 'note');
 
     const preset = app.s.mode === 'progression' ? presetOf(app.s.preset) : undefined;
     if (preset) {

@@ -29,7 +29,14 @@
           <button id="clip" title="Keep the last seconds of playing (Enter)">Clip</button>
           <button id="clips-open">Clips</button>
           <button id="settings-open" title="Settings">⚙</button>
-          <button id="why-open" title="Show or hide the explanations">Why?</button>
+          <button
+            id="why-open"
+            class="icon"
+            title="Why: show or hide the explanations"
+            aria-label="Why"
+          >
+            ?
+          </button>
           <a
             class="out"
             href="https://github.com/andrewbrooke/chordlight"
@@ -191,15 +198,14 @@
           <label>Click <input id="level-click" type="range" min="0" max="1" step="0.01" /></label>
         </div>
         <p class="quiet">
-          Keys: the letter row <code>Q</code>–<code>]</code> plays the key's notes from home, so
-          <code>Q</code> <code>E</code> <code>T</code> is the home chord; the numbers above fill in
-          the notes between. <code>Z</code>–<code>M</code> hold the key's chords, <code>←</code>
-          <code>→</code> move the octave, <code>Shift</code> is the pedal, <code>Space</code> plays
-          and stops, <code>Enter</code> takes a clip.
+          Keys: <span id="layout-help"></span> <code>Z</code>–<code>M</code> hold the key's chords,
+          <code>←</code> <code>→</code> move the octave, <code>Shift</code> is the pedal,
+          <code>Space</code> plays and stops, <code>Enter</code> takes a clip.
         </p>
+        <button id="tour-again">Show the tour again</button>
       </div>
 
-      <div id="start">
+      <div id="start" hidden>
         <div class="card">
           <h1>Chordlight</h1>
           <p>Lit keys are the notes worth playing next.</p>
@@ -211,6 +217,7 @@
             <li><span class="swatch lean"></span> violet: leans; move the way its arrow points</li>
           </ul>
           <button id="start-button" class="primary">Click to start</button>
+          <button id="start-plain" hidden>Skip the tour</button>
           <p class="quiet">
             Play with the <code>Q</code> row: it plays the key's notes, and <code>Q</code>
             <code>E</code> <code>T</code> is the home chord.
