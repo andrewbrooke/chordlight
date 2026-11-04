@@ -1,5 +1,6 @@
 import { App } from './app.js';
 import { attachMidi } from './input/midi.js';
+import { PLAY } from './tuning.js';
 import { bindClips } from './ui/clips.js';
 import { bindControls } from './ui/controls.js';
 import { $ } from './ui/dom.js';
@@ -22,9 +23,10 @@ const begin = () => {
   window.removeEventListener('keydown', begin);
   void attachMidi(
     {
-      noteOn: (m, v) => app.noteOn(m, v),
+      noteOn: (m, v) => app.noteOn(m, app.s.midiFull ? PLAY.midiFull : v),
       noteOff: (m) => app.noteOff(m),
       pedal: (down) => app.pedal(down),
+      button: (binding, down) => app.midiButton(binding, down),
       status: (text) => {
         app.midi = text;
         app.emit('audio');

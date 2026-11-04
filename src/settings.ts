@@ -1,4 +1,5 @@
 import type { Layout } from './input/keys.js';
+import type { Binding } from './input/midi.js';
 import type { Style } from './presets/library.js';
 import type { Palette } from './theory/guide.js';
 import type { MoodId } from './theory/scales.js';
@@ -6,6 +7,9 @@ import { CLIPS, MIX, PLAY } from './tuning.js';
 
 export type Mode = 'key' | 'progression';
 export type LabelMode = 'name' | 'degree' | 'role' | 'off';
+/** What a board button can be learned for. */
+export type MidiButton = 'record' | 'clip' | 'play' | 'pause';
+export const MIDI_BUTTONS: readonly MidiButton[] = ['record', 'clip', 'play', 'pause'];
 
 export interface Settings {
   mode: Mode;
@@ -34,6 +38,9 @@ export interface Settings {
   /** Play a clip's recorded backing along with it. */
   clipBacking: boolean;
   pedalReversed: boolean;
+  /** MIDI notes ignore how hard the key was struck. */
+  midiFull: boolean;
+  midiButtons: Partial<Record<MidiButton, Binding>>;
   why: boolean;
   levels: { piano: number; backing: number; bass: number; click: number };
 }
@@ -61,6 +68,8 @@ export const DEFAULTS: Settings = {
   clipSeconds: CLIPS.defaultSeconds,
   clipBacking: true,
   pedalReversed: false,
+  midiFull: false,
+  midiButtons: {},
   why: true,
   levels: { piano: MIX.piano, backing: MIX.backing, bass: MIX.bass, click: MIX.click },
 };

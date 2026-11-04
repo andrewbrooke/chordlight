@@ -1,5 +1,7 @@
 // Web MIDI input: every input and channel, with hot-plugging. Unplugging a device releases its held
-// notes. CC64 is sustain; some pedals report inverted polarity, which a setting flips.
+// notes. CC64 is sustain; some pedals report inverted polarity, which a setting flips. A board's
+// transport buttons send a CC or a note depending on the board, so the app learns them and then
+// takes them before they can play anything.
 
 export type Message =
   | { kind: 'on'; note: number; velocity: number }
@@ -28,10 +30,43 @@ export function readMessage(data: ArrayLike<number>): Message {
   }
 }
 
+/** A control a board's button can send: boards differ, so buttons are learned, not assumed. */
+export interface Binding {
+  kind: 'cc' | 'note';
+  channel: number;
+  number: number;
+}
+
+/**
+ * The control a message comes from, if it could be a button: a note, or a CC other than the
+ * pedal and the all-off messages. A CC counts as down at 64 and up, as momentary buttons send.
+ */
+export function buttonOf(data: ArrayLike<number>): { binding: Binding; down: boolean } | null {
+  const status = data[0] ?? 0;
+  const [a = 0, b = 0] = [data[1], data[2]];
+  if (status >= 0xf0) return null;
+  const channel = status & 0x0f;
+  switch (status & 0xf0) {
+    case 0x90:
+    case 0x80:
+      return { binding: { kind: 'note', channel, number: a }, down: status >= 0x90 && b > 0 };
+    case 0xb0:
+      if (a === 64 || a === 120 || a === 123) return null;
+      return { binding: { kind: 'cc', channel, number: a }, down: b >= 64 };
+    default:
+      return null;
+  }
+}
+
+export const sameBinding = (a: Binding, b: Binding): boolean =>
+  a.kind === b.kind && a.channel === b.channel && a.number === b.number;
+
 export interface MidiActions {
   noteOn(midi: number, velocity: number): void;
   noteOff(midi: number): void;
   pedal(down: boolean): void;
+  /** True if the control is a learned button (or being learned), so it plays nothing else. */
+  button(binding: Binding, down: boolean): boolean;
   status(text: string): void;
 }
 
@@ -56,6 +91,8 @@ export async function attachMidi(actions: MidiActions, reversed: () => boolean):
   const listen = (input: MIDIInput) => {
     input.onmidimessage = (e) => {
       if (!e.data) return;
+      const press = buttonOf(e.data);
+      if (press && actions.button(press.binding, press.down)) return;
       const m = readMessage(e.data);
       const notes = held.get(input.id) ?? new Set<number>();
       held.set(input.id, notes);

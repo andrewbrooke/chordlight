@@ -25,7 +25,8 @@
           <span id="tuning" class="quiet"></span>
           <span id="midi" class="quiet"></span>
           <span class="spacer"></span>
-          <button id="clip" title="Keep the last seconds of playing (Enter)">⏺ Clip</button>
+          <button id="record" title="Record until you press it again">● Record</button>
+          <button id="clip" title="Keep the last seconds of playing (Enter)">Clip</button>
           <button id="clips-open">Clips</button>
           <button id="settings-open" title="Settings">⚙</button>
           <button id="why-open" title="Show or hide the explanations">Why?</button>
@@ -35,7 +36,10 @@
             >Preset
             <select id="preset"></select
           ></label>
-          <button id="play" class="primary" title="Play or stop (Space)">▶ Play</button>
+          <button id="play" class="primary" title="Play from the top, or stop (Space)">
+            ▶ Play
+          </button>
+          <button id="pause" title="Pause or resume where it is" disabled>⏸︎ Pause</button>
           <label
             >BPM <input id="bpm" type="number" min="40" max="220" step="1" />
             <input id="bpm-slider" type="range" min="40" max="220" step="1"
@@ -102,12 +106,25 @@
             >Clip keeps the last
             <select id="clip-seconds"></select
           ></label>
+          <button id="clip-import" title="Add clips saved as JSON">Import</button>
+          <input
+            id="clip-import-file"
+            type="file"
+            accept=".json,application/json"
+            multiple
+            hidden
+          />
           <button id="clips-close">Close</button>
         </div>
         <label class="check"
           ><input id="clip-backing" type="checkbox" /> play the recorded backing with each
           clip</label
         >
+        <h3>Board buttons</h3>
+        <p class="quiet">
+          Use your MIDI keyboard's transport buttons: press Learn, then the button on the board.
+        </p>
+        <div id="board-buttons"></div>
         <p id="clips-note" class="quiet"></p>
         <ol id="clip-list"></ol>
       </div>
@@ -136,6 +153,9 @@
           >
           <label class="check"
             ><input id="pedal-reversed" type="checkbox" /> MIDI pedal works backwards</label
+          >
+          <label class="check"
+            ><input id="midi-full" type="checkbox" /> MIDI notes all play at full strength</label
           >
           <label
             >Next chord shows

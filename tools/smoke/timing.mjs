@@ -1,8 +1,9 @@
 // Loop positions, voice-leading, and cutting clips from the note log.
 
 import { backingFor, record } from 'chordlight/clips/backing.js';
-import { extractClip } from 'chordlight/clips/extract.js';
+import { cutClip, extractClip } from 'chordlight/clips/extract.js';
 import { beatAt, positionAt, timelineOf, timeOfBeat } from 'chordlight/audio/timeline.js';
+import { Transport } from 'chordlight/audio/transport.js';
 import { voice } from 'chordlight/audio/voicing.js';
 import { parseProgression } from 'chordlight/theory/roman.js';
 import { spellKey } from 'chordlight/theory/scales.js';
@@ -21,6 +22,31 @@ same(at(9), [2, 3, 1, 1, false], 'inside a two-beat chord');
 same(at(12), [0, 1, 0, 4, false], 'round the loop');
 same(at(-2), [0, 0, 0, 2, true], 'two beats into a count-in');
 same(beatAt(timeOfBeat(7.25, 3, 120), 3, 120), 7.25, 'beats and seconds agree');
+
+// Pause and resume, against a stub clock and band.
+const clock = { now: 10, heard: 10 };
+const booked = [];
+const band = { book: (e, p, time) => booked.push([e, time]), join: () => {}, stop: () => {} };
+const transport = new Transport(clock, band);
+transport.bpm = 120;
+transport.start(false);
+clock.now = clock.heard = 11.08;
+transport.pause();
+same(
+  [transport.playing, transport.paused, transport.position()?.beat],
+  [false, true, 2],
+  'a pause holds the beat it stopped on',
+);
+clock.now = clock.heard = 30;
+booked.length = 0;
+transport.resume();
+same(
+  [transport.playing, transport.paused, transport.beatAt(30.08), booked[0]],
+  [true, false, 2, [4, 30.08]],
+  'a resume carries on from that beat, starting with its eighth',
+);
+transport.stop();
+same([transport.playing, transport.paused], [false, false], 'a stop clears a pause');
 
 // Voice-leading: every chord fits the range and the band never leaps across it.
 const key = spellKey({ home: 0, mood: 'major' });
@@ -65,6 +91,21 @@ same(
   'the clip keeps the window, trims the silence and closes a held note',
 );
 same(extractClip(log, 40, 5), null, 'an empty window gives no clip');
+const recorded = cutClip(log, 10, 14);
+same(
+  recorded && [recorded.duration, recorded.events.map((e) => [e.t, e.on, e.midi])],
+  [
+    4,
+    [
+      [2, true, 64],
+      [2.5, false, 64],
+      [3, true, 67],
+      [4, false, 67],
+    ],
+  ],
+  'a recording keeps its silence, drops a note begun before it, and closes a held one',
+);
+same(cutClip(log, 2, 7), null, 'a recording with nothing played in it');
 
 // The backing recorded alongside a clip.
 const state = (t, playing, beat = 0) => ({

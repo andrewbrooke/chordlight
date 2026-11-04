@@ -31,6 +31,16 @@ export function onPick(select: HTMLSelectElement, fn: (value: string) => void): 
   });
 }
 
+/** Hands the browser a file to save. */
+export function download(name: string, type: string, data: BlobPart): void {
+  const url = URL.createObjectURL(new Blob([data], { type }));
+  const a = el('a');
+  a.href = url;
+  a.download = name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
 export function onToggle(input: HTMLInputElement, fn: (on: boolean) => void): void {
   input.addEventListener('change', () => {
     fn(input.checked);

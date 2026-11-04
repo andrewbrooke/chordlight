@@ -457,6 +457,22 @@ body.mode-progression #palette {
   margin: 10px 0;
 }
 
+/* A select is as wide as its longest option; in a drawer it takes the room left instead, and
+   the open list still shows each option in full. */
+.panel .grid > label {
+  min-width: 0;
+}
+
+.panel .grid > label:has(select) {
+  white-space: nowrap;
+}
+
+.panel select {
+  flex: 1;
+  min-width: 0;
+  text-overflow: ellipsis;
+}
+
 #clip-list {
   list-style: none;
   padding: 0;
@@ -481,6 +497,34 @@ body.mode-progression #palette {
   color: var(--soft);
 }
 
+#record.recording {
+  border-color: #e5484d;
+  color: #ff7a7a;
+}
+
+.panel h3 {
+  margin: 14px 0 0;
+  font-size: 14px;
+}
+
+.board-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.board-button .what {
+  flex: 1;
+  min-width: 0;
+}
+
+.board-button small {
+  display: block;
+  color: var(--soft);
+}
+
+#record.flash,
 #clip.flash {
   border-color: var(--home);
   color: var(--home);

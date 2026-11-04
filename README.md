@@ -14,14 +14,18 @@ each note is lit the way it is.
 
 - **Key mode:** choose a home note and a mode (major, minor, Lydian, Mixolydian, Dorian or
   Phrygian). Hold any of the key's seven chords from the palette or with `Z`–`M`.
-- **Progression mode:** 16 preset progressions, including Four Chords, the 12-bar blues, ii–V–I
+- **Progression mode:** 17 preset progressions, including Four Chords, the 12-bar blues, ii–V–I
   and the Andalusian cadence, or type your own as Roman numerals (`I V vi IV`) or chord names
   (`C G Am F`). Backing styles are pad, piano, arpeggio and drive, with optional bass, click and
   count-in. The next chord's notes are marked just before it arrives.
 - **Borrowed chords:** when a chord comes from outside the key, the lit scale changes with it.
 - **Chord recognition:** whatever you hold is named, with its Roman numeral in the current key.
 - **Clips:** keep the last 10 to 60 seconds of playing, along with the backing that was
-  playing, then play it back (with or without the backing) or delete it.
+  playing, or record exactly from one press of Record to the next, then play it back (with or
+  without the backing) or delete it. Your MIDI keyboard's transport buttons can be learned for
+  recording, clipping, playing and pausing the progression. Save a clip as JSON
+  (everything it holds, and importable again) or as a MIDI file for a DAW or notation program,
+  with the backing on its own tracks and the chord names as markers.
 - **Synthesised piano:** no samples to download. All sound is generated in the browser.
 - **Input:** computer keyboard, mouse or touch, and MIDI keyboards.
 

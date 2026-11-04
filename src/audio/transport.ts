@@ -1,6 +1,7 @@
 // Transport and lookahead scheduler. Every 25 ms it books the eighth notes due in the next 120 ms
 // against the audio clock, so timing doesn't depend on frame rate or main-thread load. A tempo
-// change re-anchors the start time so the current beat doesn't jump.
+// change re-anchors the start time so the current beat doesn't jump, and so does a resume: a pause
+// keeps the beat it stopped on and silences what was booked past it.
 
 import { TIMING } from '../tuning.js';
 import type { Backing } from './backing.js';
@@ -27,6 +28,8 @@ export class Transport {
   private next = 0;
   private timer: ReturnType<typeof setInterval> | null = null;
   private tl: Timeline = timelineOf([4]);
+  /** The beat it stopped on, while paused. */
+  private pausedAt: number | null = null;
 
   constructor(
     private readonly engine: Engine,
@@ -35,11 +38,18 @@ export class Transport {
 
   setBeats(beats: readonly number[]): void {
     this.tl = timelineOf(beats);
+    // A new progression starts from its top, whether playing or paused.
     if (this.playing) this.start(false);
+    else if (this.pausedAt !== null) this.pausedAt = 0;
+  }
+
+  get paused(): boolean {
+    return this.pausedAt !== null;
   }
 
   start(countIn = this.countIn): void {
     this.halt();
+    this.pausedAt = null;
     const spb = 60 / this.bpm;
     const lead = countIn ? TIMING.countInBeats : 0;
     this.startTime = this.engine.now + TIMING.startDelay + lead * spb;
@@ -51,9 +61,32 @@ export class Transport {
   }
 
   stop(): void {
-    if (!this.playing) return;
+    if (!this.playing && this.pausedAt === null) return;
+    this.pausedAt = null;
     this.halt();
     this.onStop();
+    this.onChange();
+  }
+
+  pause(): void {
+    if (!this.playing) return;
+    this.pausedAt = this.beatAt(this.engine.now);
+    this.halt();
+    this.onChange();
+  }
+
+  resume(): void {
+    const beat = this.pausedAt;
+    if (beat === null) return;
+    this.pausedAt = null;
+    const spb = 60 / this.bpm;
+    const time = this.engine.now + TIMING.startDelay;
+    this.startTime = time - beat * spb;
+    this.next = Math.ceil(beat * 2 - 1e-6);
+    this.playing = true;
+    if (beat >= 0) this.backing.join(positionAt(beat, this.tl), time, spb);
+    this.timer = setInterval(() => this.tick(), TIMING.tick * 1000);
+    this.tick();
     this.onChange();
   }
 
@@ -78,8 +111,9 @@ export class Transport {
     return beatAt(time, this.startTime, this.bpm);
   }
 
-  /** Defaults to the time currently being heard; null when stopped. */
+  /** Defaults to the time currently being heard; held while paused, and null when stopped. */
   position(time = this.engine.heard): Position | null {
+    if (this.pausedAt !== null) return positionAt(this.pausedAt, this.tl);
     if (!this.playing) return null;
     return positionAt(beatAt(time, this.startTime, this.bpm), this.tl);
   }

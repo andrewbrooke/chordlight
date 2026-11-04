@@ -12,9 +12,17 @@ import { voice } from './audio/voicing.js';
 import { type BackingState, record } from './clips/backing.js';
 import type { NoteEvent } from './clips/extract.js';
 import { ComputerKeys } from './input/keys.js';
+import { type Binding, sameBinding } from './input/midi.js';
 import { attachPointer } from './input/pointer.js';
 import { presetOf } from './presets/library.js';
-import { DEFAULTS, type Mode, RANGES, type Settings } from './settings.js';
+import {
+  DEFAULTS,
+  MIDI_BUTTONS,
+  type MidiButton,
+  type Mode,
+  RANGES,
+  type Settings,
+} from './settings.js';
 import { type Chord, chordHas, chordName } from './theory/chords.js';
 import { diatonicChords } from './theory/diatonic.js';
 import { chordLights, hintsAfter, keyLights, type Lights } from './theory/guide.js';
@@ -43,7 +51,8 @@ export interface Mine {
   palette: Settings['palette'];
 }
 
-type Event = 'settings' | 'context' | 'held' | 'hover' | 'audio' | 'mine' | 'clip' | 'frame';
+type Event =
+  'settings' | 'context' | 'held' | 'hover' | 'audio' | 'mine' | 'clip' | 'record' | 'frame';
 
 /** A key press shown at a booked time: the live backing's, or a clip's during playback. */
 interface Timed {
@@ -78,6 +87,8 @@ export class App {
   readonly keys: ComputerKeys;
   heldChord: number | null = null;
   keyChord: number | null = null;
+  /** The board button waiting to be learned. */
+  learning: MidiButton | null = null;
 
   private readonly held = new Map<number, number>();
   private readonly listeners = new Map<Event, (() => void)[]>();
@@ -85,9 +96,15 @@ export class App {
   private signature = '';
   private nextSignature = '';
   private timed: Timed[] = [];
+  /** While recording, the logs keep everything from here on, however long it runs. */
+  private keepFrom: number | null = null;
 
   constructor(stageHost: HTMLElement) {
     this.s.levels = { ...DEFAULTS.levels, ...this.s.levels };
+    // A binding saved for a button that no longer exists (an early Stop) would swallow its control.
+    this.s.midiButtons = Object.fromEntries(
+      Object.entries(this.s.midiButtons).filter(([b]) => MIDI_BUTTONS.includes(b as MidiButton)),
+    );
     this.stage = new Stage(stageHost);
     this.keyboard = this.buildKeyboard();
     this.keys = new ComputerKeys({
@@ -315,17 +332,63 @@ export class App {
 
   private remember(e: NoteEvent): void {
     this.log.push(e);
-    const cutoff = e.t - CLIPS.memory;
-    if (this.log.length > 4000 || this.log[0]!.t < cutoff) {
-      this.log = this.log.filter((x) => x.t >= cutoff).slice(-4000);
+    const recording = this.keepFrom !== null;
+    const cutoff = Math.min(e.t - CLIPS.memory, this.keepFrom ?? Infinity);
+    if ((!recording && this.log.length > 4000) || this.log[0]!.t < cutoff) {
+      this.log = this.log.filter((x) => x.t >= cutoff);
+      if (!recording) this.log = this.log.slice(-4000);
     }
+  }
+
+  keepLogFrom(t: number | null): void {
+    this.keepFrom = t;
+  }
+
+  learn(button: MidiButton | null): void {
+    this.learning = button;
+    this.emit('settings');
+  }
+
+  /** Learns the control if a learn is waiting, else runs what it's bound to. True if it's ours. */
+  midiButton(binding: Binding, down: boolean): boolean {
+    const learning = this.learning;
+    if (learning && down) {
+      this.learning = null;
+      const kept = Object.entries(this.s.midiButtons).filter(([, b]) => !sameBinding(b, binding));
+      this.set({ midiButtons: { ...Object.fromEntries(kept), [learning]: binding } });
+      return true;
+    }
+    const bound = Object.entries(this.s.midiButtons).find(([, b]) => sameBinding(b, binding));
+    if (!bound) return false;
+    if (!down) return true;
+    if (bound[0] === 'play') this.playStop();
+    else if (bound[0] === 'pause') this.pauseResume();
+    else this.emit(bound[0] as 'record' | 'clip');
+    return true;
   }
 
   playStop(): void {
     if (this.s.mode !== 'progression') return;
     const { transport } = this.startAudio();
+    // From a pause, Play starts again from the top; Pause is what resumes.
     if (transport.playing) transport.stop();
     else if (this.steps.length > 0) transport.start();
+    this.emit('settings');
+  }
+
+  pauseResume(): void {
+    const transport = this.audio?.transport;
+    if (this.s.mode !== 'progression' || !transport) return;
+    if (transport.playing) transport.pause();
+    else if (transport.paused) transport.resume();
+    else return;
+    this.emit('settings');
+  }
+
+  /** Pauses the progression if it's playing, so something else can be heard. */
+  pause(): void {
+    if (!this.audio?.transport.playing) return;
+    this.audio.transport.pause();
     this.emit('settings');
   }
 
@@ -415,7 +478,8 @@ export class App {
       style: s.style,
       bass: s.bass,
     };
-    this.backingLog = record(this.backingLog, state, engine.now - CLIPS.memory);
+    const keepFrom = Math.min(engine.now - CLIPS.memory, this.keepFrom ?? Infinity);
+    this.backingLog = record(this.backingLog, state, keepFrom);
   }
 
   private frame(dt: number): void {

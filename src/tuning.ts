@@ -60,6 +60,8 @@ export const MIX = {
 export const PLAY = {
   /** Velocity for computer keys and the mouse. */
   velocity: 0.7,
+  /** Velocity for every MIDI note when the full-strength setting is on. */
+  midiFull: 1,
   /** MIDI note of the layout's C at startup (C4). */
   baseNote: 60,
   lowestBase: 36,
@@ -89,6 +91,8 @@ export const BACKING = {
   pianoVelocity: 0.42,
   arpVelocity: 0.38,
   padLevel: 0.11,
+  /** Velocity written to MIDI for the synth parts (pad, drive, bass), which have levels instead. */
+  heldVelocity: 0.6,
   droneLevel: 0.09,
 };
 
@@ -98,6 +102,10 @@ export const CLIPS = {
   defaultSeconds: 30,
   choices: [10, 20, 30, 60],
   max: 40,
+  /** A recording stops itself after this many seconds; much longer may not fit in storage. */
+  longest: 600,
+  /** Tempo a clip with no backing is written to MIDI at; its notes keep their own timing. */
+  looseBpm: 120,
 };
 
 /** The on-screen keyboard. Widths follow a real piano; key length stretches to fill the stage. */

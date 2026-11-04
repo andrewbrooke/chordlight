@@ -48,9 +48,9 @@ piano's sound, `npm run render` writes WAV files to `var/render/`.
 - **No bundler.** The browser loads `dist/` directly through the import map in `index.html`, so
   imports within `src/` are relative and end in `.js`. `tools/smoke/modules.mjs` checks this.
 - **Pure modules stay pure.** `src/theory/`, `src/presets/`, `src/audio/piano-model.ts`,
-  `timeline.ts`, `voicing.ts`, `src/input/layouts.ts`, `src/clips/extract.ts` and `backing.ts` must
-  not touch the DOM, three.js or Web Audio: the smokes import them in Node, and the piano renderer
-  runs in a Worker.
+  `timeline.ts`, `voicing.ts`, `plan.ts`, `src/input/layouts.ts`, and `src/clips/extract.ts`,
+  `backing.ts`, `file.ts`, `realise.ts` and `midifile.ts` must not touch the DOM, three.js or Web
+  Audio: the smokes import them in Node, and the piano renderer runs in a Worker.
 - **Constants go in `src/tuning.ts`.**
 - **Spelling comes from the key, not the pitch.** F major has B♭, never A♯.
 - **Progressions are stored as Roman numerals**, so changing the key transposes them.

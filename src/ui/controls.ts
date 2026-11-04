@@ -39,6 +39,12 @@ export function bindControls(app: App): void {
     play.blur();
   });
 
+  const pause = $<HTMLButtonElement>('#pause');
+  pause.addEventListener('click', () => {
+    app.pauseResume();
+    pause.blur();
+  });
+
   const bpm = $<HTMLInputElement>('#bpm');
   const slider = $<HTMLInputElement>('#bpm-slider');
   for (const input of [bpm, slider]) {
@@ -92,6 +98,7 @@ export function bindControls(app: App): void {
     app.set({ pedalReversed: on });
     app.pedal(false);
   });
+  onToggle($('#midi-full'), (on) => app.set({ midiFull: on }));
   const look = $<HTMLSelectElement>('#lookahead');
   options(look, [
     ['0', 'never'],
@@ -141,7 +148,10 @@ export function bindControls(app: App): void {
     mood.value = s.mood;
     presets(app, preset);
     const playing = app.audio?.transport.playing ?? false;
+    const paused = app.audio?.transport.paused ?? false;
     play.textContent = playing ? '■ Stop' : '▶ Play';
+    pause.disabled = !playing && !paused;
+    pause.textContent = paused ? '▶ Resume' : '⏸︎ Pause';
     if (document.activeElement !== bpm) bpm.value = String(s.bpm);
     slider.value = String(s.bpm);
     $<HTMLInputElement>('#countin').checked = s.countIn;
@@ -155,6 +165,7 @@ export function bindControls(app: App): void {
     $<HTMLInputElement>('#hints').checked = s.hints;
     $<HTMLInputElement>('#ghosts').checked = s.ghosts;
     $<HTMLInputElement>('#pedal-reversed').checked = s.pedalReversed;
+    $<HTMLInputElement>('#midi-full').checked = s.midiFull;
     look.value = String(s.lookAhead);
     for (const part of ['piano', 'backing', 'bass', 'click'] as const) {
       $<HTMLInputElement>(`#level-${part}`).value = String(s.levels[part]);

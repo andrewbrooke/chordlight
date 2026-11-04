@@ -1,27 +1,21 @@
-// Saved clips: capture, playback with or without their recorded backing, deletion and persistence.
+// Saved clips: capture (the last N seconds, or a recording from one press to the next), playback
+// with or without their recorded backing, deletion and persistence.
 
 import type { App } from '../app.js';
 import { type Held, pad } from '../audio/synths.js';
 import { presetOf } from '../presets/library.js';
 import { BACKING, CLIPS } from '../tuning.js';
 import { loadList, save } from '../ui/storage.js';
-import { type BackingState, backingFor } from './backing.js';
-import { extractClip, type NoteEvent } from './extract.js';
+import { backingFor } from './backing.js';
+import { cutClip, extractClip, type NoteEvent } from './extract.js';
+import type { Clip } from './file.js';
 import { BackingReplay } from './replay.js';
-
-export interface Clip {
-  id: string;
-  created: number;
-  duration: number;
-  events: NoteEvent[];
-  where: string;
-  /** The backing's transport states, if it was playing. */
-  backing?: BackingState[];
-}
 
 export class ClipShelf {
   clips: Clip[] = loadList<Clip>('clips');
   playing: string | null = null;
+  /** The audio-clock time recording started, while recording. */
+  recording: number | null = null;
   /** False if localStorage refused the last save. */
   kept = true;
   onChange: () => void = () => {};
@@ -37,17 +31,43 @@ export class ClipShelf {
     if (!audio) return null;
     const taken = extractClip(this.app.log, audio.engine.now, this.app.s.clipSeconds);
     if (!taken) return null;
+    return this.keep(taken.events, taken.duration, taken.start);
+  }
+
+  record(): void {
+    if (this.recording !== null) return;
+    this.recording = this.app.startAudio().engine.now;
+    this.app.keepLogFrom(this.recording);
+    this.onChange();
+  }
+
+  /** Ends the recording; null if nothing was played during it. */
+  stopRecording(): Clip | null {
+    const start = this.recording;
+    const audio = this.app.audio;
+    if (start === null || !audio) return null;
+    this.recording = null;
+    this.app.keepLogFrom(null);
+    const cut = cutClip(this.app.log, start, audio.engine.now);
+    if (!cut) {
+      this.onChange();
+      return null;
+    }
+    return this.keep(cut.events, cut.duration, start);
+  }
+
+  private keep(events: NoteEvent[], duration: number, start: number): Clip {
     // With a backing, the clip starts on the beat before its first note so the backing lines up.
-    const backing = backingFor(this.app.backingLog, taken.start, taken.start + taken.duration);
+    const backing = backingFor(this.app.backingLog, start, start + duration);
     const lead = backing?.lead ?? 0;
     const s = this.app.s;
     const preset = s.mode === 'progression' ? presetOf(s.preset) : undefined;
     const where = preset ? `${preset.name} in ${this.app.key.name}` : this.app.key.name;
     const clip: Clip = {
-      id: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
+      id: newId(),
       created: Date.now(),
-      duration: taken.duration + lead,
-      events: taken.events.map((e) => ({ ...e, t: e.t + lead })),
+      duration: duration + lead,
+      events: events.map((e) => ({ ...e, t: e.t + lead })),
       where,
       ...(backing ? { backing: backing.states } : {}),
     };
@@ -60,6 +80,8 @@ export class ClipShelf {
     this.stop();
     const clip = this.clips.find((c) => c.id === id);
     if (!clip) return;
+    // A clip brings its own backing; the live one would play over it out of time.
+    this.app.pause();
     const { engine, piano } = this.app.startAudio();
     const start = engine.now + 0.05;
     for (const { on, off } of pairs(clip.events)) {
@@ -111,6 +133,12 @@ export class ClipShelf {
     this.replay = null;
   }
 
+  /** Puts an imported clip at the top of the shelf. */
+  add(clip: Clip): void {
+    this.clips = [clip, ...this.clips].slice(0, CLIPS.max);
+    this.store();
+  }
+
   remove(id: string): void {
     if (this.playing === id) this.stop();
     this.clips = this.clips.filter((c) => c.id !== id);
@@ -122,6 +150,9 @@ export class ClipShelf {
     this.onChange();
   }
 }
+
+export const newId = (): string =>
+  `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 
 function pairs(events: readonly NoteEvent[]): { on: NoteEvent; off: number }[] {
   const open = new Map<string, NoteEvent>();
