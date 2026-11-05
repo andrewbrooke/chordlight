@@ -33,7 +33,7 @@ export function bindNext(app: App, picks: Picks): void {
         app.key,
         picks.is('next', n.chord),
         () => {
-          app.tryMove(last, n.chord);
+          app.tryNext(n.chord);
           picks.pick({ box: 'next', chord: n.chord, words: NEXT_WORDS[n.reason][1], from: last });
         },
         NEXT_WORDS[n.reason][0],

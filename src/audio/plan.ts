@@ -6,7 +6,7 @@ import type { Style } from '../presets/library.js';
 import type { Step } from '../theory/roman.js';
 import { BACKING } from '../tuning.js';
 import type { Position } from './timeline.js';
-import { bassNote, powerChord, voice } from './voicing.js';
+import { bassNote, powerChord, voiceChain } from './voicing.js';
 
 export type Sound = 'pad' | 'piano' | 'drive' | 'bass';
 
@@ -26,12 +26,8 @@ export class BackingPlan {
 
   setSteps(steps: readonly Step[]): void {
     this.steps = [...steps];
-    this.voicings = [];
-    let prev: number[] | null = null;
-    for (const s of steps) {
-      prev = voice(s.chord, prev, BACKING.chordLo, BACKING.chordHi);
-      this.voicings.push(prev);
-    }
+    const chords = steps.map((s) => s.chord);
+    this.voicings = voiceChain(chords, BACKING.chordLo, BACKING.chordHi);
   }
 
   /** `eighth` counts from the loop's start. */

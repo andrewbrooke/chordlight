@@ -15,7 +15,7 @@ import { Piano } from './audio/piano.js';
 import { type Held, pad } from './audio/synths.js';
 import type { Position } from './audio/timeline.js';
 import { Transport } from './audio/transport.js';
-import { voice } from './audio/voicing.js';
+import { voice, voiceChain } from './audio/voicing.js';
 import { type BackingState, record } from './clips/backing.js';
 import type { ClipVoice, NoteEvent } from './clips/extract.js';
 import { ComputerKeys } from './input/keys.js';
@@ -92,6 +92,8 @@ export class App {
   s: Settings = load('settings', DEFAULTS);
   key: SpelledKey = spellKey({ home: this.s.home, mood: this.s.mood });
   steps: Step[] = [];
+  /** The band's voicing of each step, which every chord the editor plays matches. */
+  private voicings: number[][] = [];
   selected = 0;
   audio: Audio | null = null;
   lights: Lights = keyLights(this.key);
@@ -352,6 +354,11 @@ export class App {
   private reparse(): void {
     const parsed = parseProgression(this.s.text, this.key);
     this.steps = parsed.ok ? parsed.steps : [];
+    this.voicings = voiceChain(
+      this.steps.map((s) => s.chord),
+      BACKING.chordLo,
+      BACKING.chordHi,
+    );
     this.trying = null;
     this.selected = Math.min(this.selected, Math.max(0, this.steps.length - 1));
     if (this.audio) {
@@ -532,32 +539,38 @@ export class App {
   select(index: number): void {
     this.selected = index;
     this.trying = null;
-    const step = this.steps[index];
-    if (!step || this.audio?.transport.playing) return;
-    this.sound([step.chord]);
+    const notes = this.voicings[index];
+    if (!notes || this.audio?.transport.playing) return;
+    this.sound([notes]);
   }
 
-  /** Plays a chord without adding it to the progression, even over the band. */
+  /**
+   * Plays a chord without adding it, even over the band, voiced as it would be on the end of the
+   * progression, so Add never changes how it sounds.
+   */
   tryChord(chord: Chord | null): void {
     this.trying = chord;
-    if (chord) this.sound([chord]);
+    if (chord) this.sound([this.voiceLast(chord)]);
   }
 
-  /** Plays the change from one chord to another, voiced as the band would; shows the second. */
-  tryMove(from: Chord, to: Chord): void {
-    this.trying = to;
-    this.sound([from, to]);
+  /** Plays the progression's last chord and then `chord` after it, as the band would. */
+  tryNext(chord: Chord): void {
+    this.trying = chord;
+    const last = this.voicings.at(-1);
+    this.sound(last ? [last, this.voiceLast(chord)] : [this.voiceLast(chord)]);
   }
 
-  private sound(chords: readonly Chord[]): void {
+  private voiceLast(chord: Chord): number[] {
+    return voice(chord, this.voicings.at(-1) ?? null, BACKING.chordLo, BACKING.chordHi);
+  }
+
+  private sound(chords: readonly number[][]): void {
     const { engine } = this.startAudio();
     this.stopPreview();
     let t = engine.now;
-    let prev: number[] | null = null;
-    chords.forEach((chord, i) => {
+    chords.forEach((notes, i) => {
       const length = i < chords.length - 1 ? BACKING.previewLead : BACKING.preview;
-      prev = voice(chord, prev, BACKING.chordLo, BACKING.chordHi);
-      for (const m of prev) this.preview.push(pad(engine, m, t, BACKING.padLevel, t + length));
+      for (const m of notes) this.preview.push(pad(engine, m, t, BACKING.padLevel, t + length));
       t += length;
     });
   }

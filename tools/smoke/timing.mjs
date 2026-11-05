@@ -4,7 +4,8 @@ import { backingFor, record } from 'chordlight/clips/backing.js';
 import { cutClip, extractClip } from 'chordlight/clips/extract.js';
 import { beatAt, positionAt, timelineOf, timeOfBeat } from 'chordlight/audio/timeline.js';
 import { Transport } from 'chordlight/audio/transport.js';
-import { voice } from 'chordlight/audio/voicing.js';
+import { BackingPlan } from 'chordlight/audio/plan.js';
+import { voice, voiceChain } from 'chordlight/audio/voicing.js';
 import { QUALITIES, chordHas } from 'chordlight/theory/chords.js';
 import { spellOnLetter } from 'chordlight/theory/pitch.js';
 import { parseProgression } from 'chordlight/theory/roman.js';
@@ -75,6 +76,32 @@ for (const [home, text] of [
       check(shift <= 4, `${text}: the voicing jumps ${shift.toFixed(1)} semitones`);
     }
     prev = v;
+  }
+}
+
+// The editor previews a chord as voiceChain would put it on the end, and the band must play exactly
+// that: once on the end it is voiced the same, and adding it re-voices nothing before it.
+{
+  const key = spellKey({ home: 0, mood: 'major' });
+  const chords = parseProgression('I iii vi IVmaj7 ii9 V7sus4', key).steps.map((s) => s.chord);
+  const lo = BACKING.chordLo;
+  const hi = BACKING.chordHi;
+  for (let n = 1; n < chords.length; n++) {
+    const before = voiceChain(chords.slice(0, n), lo, hi);
+    const after = voiceChain(chords.slice(0, n + 1), lo, hi);
+    same(after.slice(0, n), before, `adding chord ${n + 1} re-voices nothing before it`);
+    same(after[n], voice(chords[n], before.at(-1), lo, hi), `chord ${n + 1} sounds as previewed`);
+  }
+  for (const style of ['pad', 'piano']) {
+    const plan = new BackingPlan();
+    plan.style = style;
+    plan.bassOn = false;
+    plan.setSteps(chords.map((chord) => ({ chord, beats: 4 })));
+    const chain = voiceChain(chords, lo, hi);
+    chords.forEach((_, step) => {
+      const pos = { step, next: 0, beatInStep: 0, beatsLeft: 4, countIn: false };
+      same(plan.at(0, pos, 0, 0.5)[0].notes, chain[step], `${style}: the band plays the chain`);
+    });
   }
 }
 

@@ -63,6 +63,13 @@ function movement(a: readonly number[], b: readonly number[]): number {
   return a.reduce((s, x) => s + near(x, b), 0) + b.reduce((s, y) => s + near(y, a), 0);
 }
 
+/** A progression's voicings, each led on from the one before, as the band plays them. */
+export function voiceChain(chords: readonly Chord[], lo: number, hi: number): number[][] {
+  const out: number[][] = [];
+  for (const chord of chords) out.push(voice(chord, out.at(-1) ?? null, lo, hi));
+  return out;
+}
+
 /** The slash bass if there is one, else the root, in the octave starting at `lo`. */
 export function bassNote(chord: Chord, lo: number): number {
   const pc = chord.bass ? pcOfSpelling(chord.bass) : rootPc(chord);
