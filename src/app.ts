@@ -35,6 +35,7 @@ import {
 import { type Chord, chordHas, chordName } from './theory/chords.js';
 import { diatonicChords } from './theory/diatonic.js';
 import { chordLights, hintsAfter, keyLights, type Lights } from './theory/guide.js';
+import { rollProgression } from './theory/roll.js';
 import { nameOf, pcOf } from './theory/pitch.js';
 import { parseProgression, progressionText, type Step } from './theory/roman.js';
 import { degreeLabel, type SpelledKey, spellKey } from './theory/scales.js';
@@ -550,6 +551,15 @@ export class App {
     const notes = this.voiceLast(chord);
     this.sound([notes]);
     return notes;
+  }
+
+  /**
+   * Replaces the progression with a random one that makes sense in the key and plays it through,
+   * unless the band is playing, in which case it simply carries on with the new chords.
+   */
+  roll(): void {
+    this.applyText(progressionText(rollProgression(this.key, Math.random), this.key));
+    if (!this.audio?.transport.playing) this.sound(this.voicings);
   }
 
   /** Plays the progression's last chord and then `chord` after it, as the band would. */

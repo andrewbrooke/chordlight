@@ -122,8 +122,10 @@ function moveTo(after: Chord, to: Chord, home: number): Omit<Next, 'chord'> | nu
   if (pcOf(from - home) === 7 && pcOf(rootPc(to) - home) === 9) {
     return { pull: 'step', reason: 'fakeOut' };
   }
-  if (i === 1 || i === 2) return { pull: 'step', reason: 'stepUp' };
-  if (i === 10 || i === 11) return { pull: 'step', reason: 'stepDown' };
+  // Roots on one letter (♭VI and vi) are the same degree bent, not a step: the change smears.
+  const bent = to.root.letter === after.root.letter;
+  if (!bent && (i === 1 || i === 2)) return { pull: 'step', reason: 'stepUp' };
+  if (!bent && (i === 10 || i === 11)) return { pull: 'step', reason: 'stepDown' };
   if (toHome) return { pull: 'step', reason: 'home' };
   return null;
 }

@@ -371,6 +371,17 @@ export const BACKING = {
   previewLead: 0.9,
 };
 
+/** The editor's Roll: a random progression built from what comes next (theory/roll.ts). */
+export const ROLL = {
+  length: 4,
+  /** How likely each starting chord is, by degree of the key: I, then vi, then iii. */
+  start: [3, 0, 1, 0, 0, 2, 0],
+  /** How likely each kind of move is when picking the next chord. */
+  pulls: { strong: 4, smooth: 3, step: 2, colour: 1 },
+  /** Borrowed chords in one roll at most, so it still sounds like the key. */
+  colours: 1,
+};
+
 export const CLIPS = {
   /** Seconds of playing kept for clips. */
   memory: 120,

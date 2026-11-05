@@ -35,6 +35,12 @@ export function bindEditor(app: App): void {
     return bad === null;
   };
   $('#prog-apply').addEventListener('click', () => apply());
+  $('#prog-roll').addEventListener('click', (e) => {
+    app.roll();
+    error.textContent = '';
+    text.value = app.s.text;
+    (e.currentTarget as HTMLElement).blur();
+  });
   text.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') apply();
     if (e.key === 'Escape') text.blur();

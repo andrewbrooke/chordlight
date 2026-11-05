@@ -21,6 +21,7 @@ each note is lit the way it is.
   and count-in. The next chord's notes are marked just before it arrives.
 - **The editor:** hear any chord before adding it, from the key's own chords, borrowed ones, any
   root and type, or the chords that sound good after your last one, each with the reason why.
+  **Roll** makes a random four-chord progression from the same suggestions, one that loops.
 - **Borrowed chords:** when a chord comes from outside the key, the lit scale changes with it.
 - **Chord recognition:** whatever you hold is named, with its Roman numeral in the current key.
 - **Clips:** keep the last 10 to 60 seconds of playing, along with the backing that was

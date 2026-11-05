@@ -5,6 +5,7 @@ import { detect } from 'chordlight/theory/detect.js';
 import { diatonicChords, diatonicSevenths } from 'chordlight/theory/diatonic.js';
 import { fitScale } from 'chordlight/theory/fit.js';
 import { nextChords } from 'chordlight/theory/next.js';
+import { rollProgression } from 'chordlight/theory/roll.js';
 import { chordLights, keyLights } from 'chordlight/theory/guide.js';
 import { nameOf, pcOf } from 'chordlight/theory/pitch.js';
 import {
@@ -174,7 +175,8 @@ for (const mood of MOODS) {
         const list = nextChords(chord, k);
         const names = list.map((n) => chordName(n.chord));
         const label = `after ${chordName(chord)} in ${k.name}`;
-        check(list.length >= 2, `${label}: only ${names}`);
+        // ♭II, and VII in minor, are a half step from home and only go there.
+        check(list.length >= 1, `${label}: nothing`);
         check(new Set(names).size === names.length, `${label}: repeats ${names}`);
         check(!names.includes(chordName(chord)), `${label}: suggests itself`);
         check(!list.some((n) => n.chord.quality === 'dim'), `${label}: a diminished chord`);
@@ -234,6 +236,44 @@ same(
   'G♯3 B♯3 D♯4',
   'B♯ belongs to the octave below its key',
 );
+
+// Roll: four chords, starting on one that rests at home, each one a suggestion for the one
+// before, none twice, at most one borrowed, and looping back to the first. Seeded, so repeatable.
+{
+  let seed = 7;
+  const random = () => {
+    seed = (seed * 1664525 + 1013904223) % 4294967296;
+    return seed / 4294967296;
+  };
+  const sameChord = (a, b) => chordName(a) === chordName(b);
+  let open = 0;
+  let rolls = 0;
+  for (const mood of MOODS) {
+    for (let home = 0; home < 12; home++) {
+      const k = spellKey({ home, mood: mood.id });
+      const homes = diatonicChords(k).filter((_, d) => d === 0 || d === 2 || d === 5);
+      for (let n = 0; n < 40; n++) {
+        const chords = rollProgression(k, random).map((s) => s.chord);
+        const text = `${chords.map(chordName).join(' ')} in ${k.name}`;
+        rolls++;
+        check(chords.length === 4, `${text}: not four`);
+        check(
+          homes.some((h) => sameChord(h, chords[0])),
+          `${text}: starts away from home`,
+        );
+        for (let i = 1; i < chords.length; i++) {
+          const ok = nextChords(chords[i - 1], k).some((m) => sameChord(m.chord, chords[i]));
+          check(ok, `${text}: ${chordName(chords[i])} isn't a suggestion after the one before`);
+        }
+        check(new Set(chords.map(chordName)).size === 4, `${text}: a chord twice`);
+        const borrowed = chords.filter((c) => !fitScale(k, c).inKey).length;
+        check(borrowed <= 1, `${text}: ${borrowed} borrowed`);
+        if (!nextChords(chords[3], k).some((m) => sameChord(m.chord, chords[0]))) open++;
+      }
+    }
+  }
+  check(open === 0, `${open} of ${rolls} rolls don't lead back to their first chord`);
+}
 
 const secondary = parseRoman('V/vi', C);
 same(secondary && chordName(secondary.chord), 'E', 'V/vi in C');
