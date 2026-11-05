@@ -143,22 +143,60 @@
         <section id="above">
           <div id="lane"></div>
           <div id="editor" hidden>
-            <div class="row">
-              <input id="prog-text" type="text" spellcheck="false" autocomplete="off" />
-              <button id="prog-apply" class="primary">Apply</button>
-              <span id="prog-error" class="error"></span>
+            <section class="ed" id="ed-text">
+              <div class="row">
+                <h3>Your progression</h3>
+                <input id="prog-text" type="text" spellcheck="false" autocomplete="off" />
+                <button id="prog-apply" class="primary">Apply</button>
+                <span class="save">
+                  <input id="save-name" type="text" placeholder="name your progression" />
+                  <button id="save-mine">Save as mine</button>
+                  <button id="delete-mine" hidden>Delete this one</button>
+                </span>
+              </div>
+              <p class="quiet">
+                <span id="prog-error" class="error"></span>
+                Type numerals (<code>I V vi IV</code>, <code>bVII</code>, <code>ii7</code>,
+                <code>V/vi</code>) or chord names (<code>C G Am F</code>). <code>:2</code> after a
+                chord makes it last two beats.
+              </p>
+            </section>
+
+            <div class="ed-picks">
+              <section class="ed" id="ed-next">
+                <div class="ed-head">
+                  <h3>What comes next</h3>
+                  <span class="quiet">chords that sound good after your last one</span>
+                </div>
+                <div id="next-pick"></div>
+              </section>
+
+              <section class="ed" id="ed-key">
+                <div class="ed-head">
+                  <h3 id="prog-add-title">From the key</h3>
+                  <span class="quiet">its own chords, and borrowed ones</span>
+                </div>
+                <div id="prog-add"></div>
+                <p class="quiet edges">
+                  <span class="swatch edge job-home">rests at home</span>
+                  <span class="swatch edge job-away">moves away</span>
+                  <span class="swatch edge job-tension">pulls home</span>
+                  <span class="swatch job-borrowed"
+                    ><b class="numeral">♭VI</b> borrowed from outside the key</span
+                  >
+                </p>
+              </section>
+
+              <section class="ed" id="try">
+                <div class="ed-head">
+                  <h3>Try any chord</h3>
+                  <span class="quiet">any root, any type</span>
+                </div>
+                <div id="try-pick"></div>
+              </section>
             </div>
-            <div class="row" id="prog-add"></div>
-            <div class="row">
-              <input id="save-name" type="text" placeholder="name your progression" />
-              <button id="save-mine">Save as mine</button>
-              <button id="delete-mine" hidden>Delete this one</button>
-            </div>
-            <p class="quiet">
-              Type numerals (<code>I V vi IV</code>, <code>bVII</code>, <code>ii7</code>,
-              <code>V/vi</code>) or chord names (<code>C G Am F</code>). <code>:2</code> after a
-              chord makes it last two beats.
-            </p>
+
+            <div id="picked" class="chosen"></div>
           </div>
           <div id="palette"></div>
         </section>

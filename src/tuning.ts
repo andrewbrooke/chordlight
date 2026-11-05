@@ -366,6 +366,9 @@ export const BACKING = {
   droneLevel: 0.09,
   /** Fade time constant, in seconds, when a clicked or held chord replaces the one sounding. */
   swapCut: 0.02,
+  /** Seconds a clicked chord sounds, and the first chord of a clicked change before the second. */
+  preview: 1.4,
+  previewLead: 0.9,
 };
 
 export const CLIPS = {

@@ -13,7 +13,7 @@ import {
   simplify,
   spellOnLetter,
 } from './pitch.js';
-import { MAJOR, type SpelledKey } from './scales.js';
+import { DEGREE_LABELS, MAJOR, type SpelledKey } from './scales.js';
 
 export interface Step {
   chord: Chord;
@@ -21,6 +21,11 @@ export interface Step {
 }
 
 const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
+
+/** Every root by semitones above home, as the numeral that reads it: the degree labels' accidentals. */
+export const ROOT_NUMERALS = DEGREE_LABELS.map((d) =>
+  d.replace(/\d/, (n) => ROMAN[Number(n) - 1]!),
+);
 const NUMERAL = '(VII|VI|IV|V|III|II|I|vii|vi|iv|v|iii|ii|i)';
 const TOKEN = new RegExp(`^([b#♭♯]?)${NUMERAL}([^/:]*)(?:/([b#♭♯]?)${NUMERAL})?(?::(\\d+))?$`);
 

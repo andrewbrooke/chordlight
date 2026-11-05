@@ -4,6 +4,7 @@ import { type Chord, chordName, qualityOf, rootPc } from '../theory/chords.js';
 import { type Heard, INTERVAL_NAMES } from '../theory/detect.js';
 import type { Fit } from '../theory/fit.js';
 import type { Lights } from '../theory/guide.js';
+import type { Pull, Reason } from '../theory/next.js';
 import { nameOf, pcOf } from '../theory/pitch.js';
 import { numeralLabel } from '../theory/roman.js';
 import { MOODS, type SpelledKey, spellKey } from '../theory/scales.js';
@@ -161,6 +162,41 @@ export const LIGHT_WORDS = {
   land: 'land: safe to hold and to end on',
   wander: 'wander: in key, fine to pass through',
   lean: 'lean: clashes a little; move on the way the arrow points',
+};
+
+export const PULL_WORDS: Record<Pull, string> = {
+  strong: 'Strongest pull',
+  smooth: 'Smooth',
+  step: 'Steps',
+  colour: 'Borrowed colour',
+};
+
+/** For each reason a chord can follow another: a tag short enough for a chip, and a sentence. */
+export const NEXT_WORDS: Record<Reason, [tag: string, sentence: string]> = {
+  settles: ['settles', 'The held-back note settles: a sus chord resolving into its own chord.'],
+  resolves: ['resolves', 'The root rises a half step: a diminished chord landing where it leans.'],
+  fullStop: ['full stop', 'The root falls a fifth onto home: the strongest ending there is.'],
+  fifth: ['falls a 5th', 'The root falls a fifth: the strongest pull from one chord to the next.'],
+  amen: ['"amen"', 'The root falls a fourth onto home: the soft "amen" ending.'],
+  toV: ['builds to V', 'The root climbs a step to V, which then wants to go home.'],
+  setsOut: ['sets out', 'From home up to V: setting out, with the pull back built in.'],
+  thirdDown: ['falls a 3rd', 'The root falls a third, so two notes stay put: a smooth change.'],
+  thirdUp: ['rises a 3rd', 'The root rises a third, so two notes stay put: a smooth change.'],
+  fakeOut: ['fake-out', 'V usually goes home. Going to vi instead is the classic fake-out.'],
+  stepUp: ['steps up', 'The root climbs a step: a plain, rising move.'],
+  stepDown: ['steps down', 'The root steps down: a plain, falling move.'],
+  home: ['back home', 'Straight back to the home chord.'],
+  bVII: ['rock way home', '♭VII, borrowed from the minor key: a rock way back to I.'],
+  iv: ['bittersweet', 'The minor iv, borrowed from the minor key: bittersweet, and it leads home.'],
+  bVI: [
+    'cinematic',
+    '♭VI, borrowed from the minor key: big and cinematic; ♭VII then I follows well.',
+  ],
+  V: ['pulls home', 'The major V, borrowed from the major key: its raised note pulls hard home.'],
+  II: ['points at V', 'II is the V of V: borrowed to lean towards V.'],
+  III: ['points at vi', 'III is the V of vi: borrowed to lean towards vi.'],
+  bIII: ['bold', '♭III, borrowed from the minor key: a bold change of colour.'],
+  bII: ['dark', '♭II, a half step above home: dark, and it falls back home.'],
 };
 
 function capital(s: string): string {

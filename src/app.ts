@@ -111,6 +111,8 @@ export class App {
   readonly keys: ComputerKeys;
   readonly guitar: GuitarLink;
   heldChord: number | null = null;
+  /** A chord tried in the editor; while stopped, the keys and the Why panel show it. */
+  trying: Chord | null = null;
   keyChord: number | null = null;
   /** The board button waiting to be learned. */
   learning: MidiButton | null = null;
@@ -121,7 +123,7 @@ export class App {
   private readonly heard = new Set<number>();
   private readonly listeners = new Map<Event, (() => void)[]>();
   private drone: { held: Held; midi: number }[] = [];
-  /** The chord a lane card plays when clicked. */
+  /** The chord a lane card or the editor plays when clicked. */
   private preview: Held[] = [];
   private signature = '';
   private nextSignature = '';
@@ -264,6 +266,7 @@ export class App {
     this.keys.base = this.s.base;
     if (rebuilt || this.keys.span()[0] !== lowest) this.showKeys();
     if (changed('mode')) {
+      this.trying = null;
       this.audio?.transport.stop();
       this.heldChord = null;
       this.restartDrone();
@@ -349,6 +352,7 @@ export class App {
   private reparse(): void {
     const parsed = parseProgression(this.s.text, this.key);
     this.steps = parsed.ok ? parsed.steps : [];
+    this.trying = null;
     this.selected = Math.min(this.selected, Math.max(0, this.steps.length - 1));
     if (this.audio) {
       this.audio.backing.setSteps(this.steps);
@@ -492,6 +496,7 @@ export class App {
     if (transport.playing) transport.stop();
     else if (this.steps.length > 0) {
       this.stopPreview();
+      this.trying = null;
       transport.start();
     }
     this.emit('settings');
@@ -526,12 +531,35 @@ export class App {
   /** Selects a card while stopped and plays its chord once. */
   select(index: number): void {
     this.selected = index;
+    this.trying = null;
     const step = this.steps[index];
     if (!step || this.audio?.transport.playing) return;
+    this.sound([step.chord]);
+  }
+
+  /** Plays a chord without adding it to the progression, even over the band. */
+  tryChord(chord: Chord | null): void {
+    this.trying = chord;
+    if (chord) this.sound([chord]);
+  }
+
+  /** Plays the change from one chord to another, voiced as the band would; shows the second. */
+  tryMove(from: Chord, to: Chord): void {
+    this.trying = to;
+    this.sound([from, to]);
+  }
+
+  private sound(chords: readonly Chord[]): void {
     const { engine } = this.startAudio();
     this.stopPreview();
-    const notes = voice(step.chord, null, BACKING.chordLo, BACKING.chordHi);
-    this.preview = notes.map((m) => pad(engine, m, engine.now, BACKING.padLevel, engine.now + 1.4));
+    let t = engine.now;
+    let prev: number[] | null = null;
+    chords.forEach((chord, i) => {
+      const length = i < chords.length - 1 ? BACKING.previewLead : BACKING.preview;
+      prev = voice(chord, prev, BACKING.chordLo, BACKING.chordHi);
+      for (const m of prev) this.preview.push(pad(engine, m, t, BACKING.padLevel, t + length));
+      t += length;
+    });
   }
 
   private stopPreview(): void {
@@ -629,8 +657,9 @@ export class App {
 
     let chord: Chord | null;
     if (this.s.mode === 'progression') {
-      const index = this.position ? this.position.step : this.selected;
-      chord = this.steps[index]?.chord ?? null;
+      chord = this.position
+        ? (this.steps[this.position.step]?.chord ?? null)
+        : (this.trying ?? this.steps[this.selected]?.chord ?? null);
     } else chord = this.keyChordNow();
     this.setContext(chord);
 

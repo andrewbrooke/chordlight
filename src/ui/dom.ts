@@ -17,6 +17,14 @@ export function el<K extends keyof HTMLElementTagNameMap>(
   return node;
 }
 
+/** A row of buttons under a name: beside it where there's room, above it where there isn't. */
+export function group(label: string, items: HTMLElement[]): HTMLElement {
+  return el('div', { className: 'group' }, [
+    el('span', { className: 'sub', text: label }),
+    el('div', { className: 'chips' }, items),
+  ]);
+}
+
 export function options(select: HTMLSelectElement, items: [value: string, label: string][]): void {
   const current = select.value;
   select.replaceChildren(...items.map(([value, label]) => new Option(label, value)));

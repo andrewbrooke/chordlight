@@ -1,9 +1,10 @@
 // Key spelling, chord recognition, numeral round-trips, borrowed-chord scales, and the lights.
 
-import { chordName, chordPcs, QUALITIES } from 'chordlight/theory/chords.js';
+import { chordName, chordPcs, QUALITIES, rootPc } from 'chordlight/theory/chords.js';
 import { detect } from 'chordlight/theory/detect.js';
 import { diatonicChords, diatonicSevenths } from 'chordlight/theory/diatonic.js';
 import { fitScale } from 'chordlight/theory/fit.js';
+import { nextChords } from 'chordlight/theory/next.js';
 import { chordLights, keyLights } from 'chordlight/theory/guide.js';
 import { nameOf, pcOf } from 'chordlight/theory/pitch.js';
 import {
@@ -11,6 +12,7 @@ import {
   parseProgression,
   parseRoman,
   progressionText,
+  ROOT_NUMERALS,
 } from 'chordlight/theory/roman.js';
 import { MOODS, spellKey } from 'chordlight/theory/scales.js';
 import { check, done, same } from './kit/check.mjs';
@@ -122,6 +124,71 @@ for (const home of [0, 3, 6, 9]) {
     }
   }
 }
+// The editor's tryer: each root numeral lands that many semitones above home, and every chord type
+// on it is added as text that reads back as the same chord.
+same(ROOT_NUMERALS.join(' '), 'I ♭II II ♭III III IV ♯IV V ♭VI VI ♭VII VII', 'the root numerals');
+for (const mood of MOODS) {
+  for (let home = 0; home < 12; home++) {
+    const k = spellKey({ home, mood: mood.id });
+    ROOT_NUMERALS.forEach((numeral, i) => {
+      const root = parseRoman(numeral, k)?.chord.root;
+      check(root && pcOf(rootPc({ root }) - home) === i, `${numeral} in ${k.name}`);
+      for (const q of QUALITIES) {
+        const chord = { root, quality: q.id };
+        const back = parseRoman(numeralText(chord, k), k)?.chord;
+        check(
+          back && back.quality === q.id && rootPc(back) === rootPc(chord),
+          `${chordName(chord)} in ${k.name} adds as ${numeralText(chord, k)}`,
+        );
+      }
+    });
+  }
+}
+
+// What comes next: the classic moves, named for why they work.
+const D = spellKey({ home: 2, mood: 'major' });
+const after = (t, k = D) =>
+  nextChords(parseRoman(t, k).chord, k).map((n) => `${numeralText(n.chord, k)}:${n.reason}`);
+same(after('V')[0], 'I:fullStop', 'V goes home first');
+check(after('V').includes('vi:fakeOut'), 'V to vi is the fake-out');
+check(!after('V').some((s) => s.startsWith('ii:')), 'V back to ii is left out');
+same(after('I').slice(0, 2), ['IV:fifth', 'V:setsOut'], 'from home: IV, then out to V');
+same(
+  after('I').filter((s) => s.startsWith('b') || s.startsWith('iv')),
+  ['bVII:bVII', 'iv:iv', 'bVI:bVI'],
+  'from home, three borrowed colours',
+);
+check(after('IV').includes('iv:iv'), 'IV to iv, the bittersweet change');
+same(after('Vsus4')[0], 'V:settles', 'a sus chord settles first');
+same(after('vii°')[0], 'I:resolves', 'vii° rises to home');
+same(after('i', spellKey({ home: 2, mood: 'minor' }))[0], 'iv:fifth', 'minor: i to iv');
+// Any chord in any key: some suggestions, none repeated, none the chord itself or diminished, at
+// most three borrowed, and always a way home.
+for (const mood of MOODS) {
+  for (let home = 0; home < 12; home++) {
+    const k = spellKey({ home, mood: mood.id });
+    for (const numeral of ROOT_NUMERALS) {
+      for (const q of QUALITIES) {
+        const chord = { root: parseRoman(numeral, k).chord.root, quality: q.id };
+        const list = nextChords(chord, k);
+        const names = list.map((n) => chordName(n.chord));
+        const label = `after ${chordName(chord)} in ${k.name}`;
+        check(list.length >= 2, `${label}: only ${names}`);
+        check(new Set(names).size === names.length, `${label}: repeats ${names}`);
+        check(!names.includes(chordName(chord)), `${label}: suggests itself`);
+        check(!list.some((n) => n.chord.quality === 'dim'), `${label}: a diminished chord`);
+        check(list.filter((n) => n.pull === 'colour').length <= 3, `${label}: too much colour`);
+        if (rootPc(chord) !== home) {
+          check(
+            list.some((n) => rootPc(n.chord) === home),
+            `${label}: no way home`,
+          );
+        }
+      }
+    }
+  }
+}
+
 const secondary = parseRoman('V/vi', C);
 same(secondary && chordName(secondary.chord), 'E', 'V/vi in C');
 const named = parseProgression('C G Am F', C);

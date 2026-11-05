@@ -5,6 +5,8 @@ import { cutClip, extractClip } from 'chordlight/clips/extract.js';
 import { beatAt, positionAt, timelineOf, timeOfBeat } from 'chordlight/audio/timeline.js';
 import { Transport } from 'chordlight/audio/transport.js';
 import { voice } from 'chordlight/audio/voicing.js';
+import { QUALITIES, chordHas } from 'chordlight/theory/chords.js';
+import { spellOnLetter } from 'chordlight/theory/pitch.js';
 import { parseProgression } from 'chordlight/theory/roman.js';
 import { spellKey } from 'chordlight/theory/scales.js';
 import { BACKING } from 'chordlight/tuning.js';
@@ -48,10 +50,19 @@ same(
 transport.stop();
 same([transport.playing, transport.paused], [false, false], 'a stop clears a pause');
 
-// Voice-leading: every chord fits the range and the band never leaps across it.
-const key = spellKey({ home: 0, mood: 'major' });
-for (const text of ['I V vi IV', 'ii7 V7 Imaj7', 'I bVI bVII I', 'IVmaj7 III7 vi7 v7 I7']) {
-  const { steps } = parseProgression(text, key);
+// Voice-leading: every chord fits the range and the band never leaps across it. The ninths in D
+// once left IVmaj9 with no voicing that fit, and every chord after it silent.
+for (const [home, text] of [
+  [0, 'I V vi IV'],
+  [0, 'ii7 V7 Imaj7'],
+  [0, 'I bVI bVII I'],
+  [0, 'IVmaj7 III7 vi7 v7 I7'],
+  [2, 'Imaj9 iii7 IVmaj9 iv6 vi7 bVImaj7 ii9 Vsus4'],
+  [7, 'Iadd9 vi9 IV9 iiadd9 V9 Imaj9'],
+]) {
+  const parsed = parseProgression(text, spellKey({ home, mood: 'major' }));
+  check(parsed.ok, `${text}: does not parse at ${parsed.token}`);
+  const steps = parsed.steps ?? [];
   let prev = null;
   for (const s of steps) {
     const v = voice(s.chord, prev, BACKING.chordLo, BACKING.chordHi);
@@ -64,6 +75,27 @@ for (const text of ['I V vi IV', 'ii7 V7 Imaj7', 'I bVI bVII I', 'IVmaj7 III7 vi
       check(shift <= 4, `${text}: the voicing jumps ${shift.toFixed(1)} semitones`);
     }
     prev = v;
+  }
+}
+
+// Every chord on every root voices inside both ranges, with each note one of its own.
+for (const [lo, hi] of [
+  [BACKING.chordLo, BACKING.chordHi],
+  [BACKING.droneLo, BACKING.droneHi],
+]) {
+  for (let pc = 0; pc < 12; pc++) {
+    for (const q of QUALITIES) {
+      const chord = {
+        root: spellOnLetter(pc, [0, 0, 1, 2, 2, 3, 3, 4, 5, 5, 6, 6][pc]),
+        quality: q.id,
+      };
+      const v = voice(chord, null, lo, hi);
+      const has = chordHas(chord);
+      check(
+        v.length >= 2 && v[0] >= lo && v.at(-1) <= hi && v.every((m) => has[m % 12]),
+        `${pc}${q.suffix} in ${lo}..${hi}: ${v}`,
+      );
+    }
   }
 }
 
