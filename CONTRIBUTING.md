@@ -51,11 +51,11 @@ piano's sound, `npm run render` writes WAV files to `var/render/`; for the guita
   imports within `src/` are relative and end in `.js`. `tools/smoke/modules.mjs` checks this.
 - **Pure modules stay pure.** `src/theory/`, `src/presets/`, `src/audio/piano-model.ts`,
   `guitar-model.ts`, `amp-model.ts`, `timeline.ts`, `voicing.ts`, `plan.ts`, `src/input/layouts.ts`,
-  `src/view/neck-layout.ts`, `src/listen/` except `input.ts` and `link.ts`, `src/clips/extract.ts`,
-  `backing.ts`, `file.ts`, `realise.ts`, `midifile.ts`, `score.ts`, `notate.ts`, `engrave.ts`,
-  `pdf.ts` and `sheet.ts`, and `src/ui/tour-steps.ts` and `tour-place.ts` must not touch the DOM,
-  three.js or Web Audio: the smokes import them in Node, the piano renderer runs in a Worker, and
-  the guitar detector runs in an AudioWorklet.
+  `src/view/neck-layout.ts` and `framing.ts`, `src/listen/` except `input.ts` and `link.ts`,
+  `src/clips/extract.ts`, `backing.ts`, `file.ts`, `realise.ts`, `midifile.ts`, `score.ts`,
+  `notate.ts`, `engrave.ts`, `pdf.ts` and `sheet.ts`, and `src/ui/tour-steps.ts` and
+  `tour-place.ts` must not touch the DOM, three.js or Web Audio: the smokes import them in Node,
+  the piano renderer runs in a Worker, and the guitar detector runs in an AudioWorklet.
 - **The detector is checked on synthesised audio and on real recordings.** `tools/smoke/listen.mjs`
   plucks notes with the guitar voice and asserts what is heard and when; synthesised strings
   don't do everything a real guitar does, so a recording from **Record input** (a WAV with its

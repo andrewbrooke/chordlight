@@ -322,6 +322,22 @@ export const POINTER = {
   hoverLinger: 0.15,
 };
 
+/** The stage (view/stage.ts, framing.ts). */
+export const STAGE = {
+  /**
+   * How wide, in CSS px, a white key or a fret is drawn for a finger, and at least for a mouse. When
+   * the whole instrument won't fit at that, the stage shows a section of it, with a strip to move it.
+   */
+  finger: 56,
+  mouse: 14,
+  /** A section never shows fewer keys, or frets past the nut, than this; keys get narrower first. */
+  fewestKeys: 16,
+  fewestFrets: 5,
+};
+
+/** Screens this small get the compact bar, the rest of the controls behind ☰ (ui/menu.ts). */
+export const COMPACT = '(max-width: 900px), (max-height: 520px)';
+
 export const TIMING = {
   /** Scheduler interval and lookahead, in seconds. */
   tick: 0.025,
@@ -377,9 +393,10 @@ export const KEYS = {
   black: 1.37,
   /** Black key length as a fraction of a white key's. */
   blackRatio: 0.62,
-  /** Key length limits in cm; shorter keys would put markers under the black keys. */
-  minLength: 18.5,
+  /** Key length limits in cm. Keys shorter than `decorLength` draw their markings smaller to fit. */
+  minLength: 10,
   maxLength: 30,
+  decorLength: 18.5,
   margin: 0.4,
   /** Front lip depth (the key's visible thickness); a press shrinks it to `pressedLip`. */
   lipWhite: 0.95,

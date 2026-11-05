@@ -6,12 +6,14 @@ import { bindControls } from './ui/controls.js';
 import { $ } from './ui/dom.js';
 import { bindGuitar } from './ui/guitar.js';
 import { bindLane } from './ui/lane.js';
+import { bindMenu } from './ui/menu.js';
 import { bindPalette } from './ui/palette.js';
 import { GuitarSetup } from './ui/setup.js';
 import { bindTour, markTourSeen, startTour, tourSeen } from './ui/tour.js';
 import { bindWhy } from './ui/why.js';
 
 const app = new App($('#stage'));
+bindMenu();
 bindControls(app);
 bindLane(app);
 bindPalette(app);

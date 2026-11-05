@@ -8,6 +8,7 @@ export function bindLane(app: App): void {
   const lane = $('#lane');
   let cards: HTMLElement[] = [];
   let shown = '';
+  let followed = -1;
 
   const build = () => {
     cards = app.steps.map((step, i) => {
@@ -32,6 +33,7 @@ export function bindLane(app: App): void {
     });
     lane.replaceChildren(...cards);
     shown = '';
+    followed = -1;
   };
 
   // Runs every frame, so it only touches the DOM when the state string changes.
@@ -53,12 +55,27 @@ export function bindLane(app: App): void {
         dot.classList.toggle('done', i === current && b <= beat);
       });
     });
+    const focus = pos ? current : app.selected;
+    if (focus !== followed) {
+      followed = focus;
+      const card = cards[focus];
+      if (card) reveal(lane, card);
+    }
   };
 
   app.on('settings', build);
   app.on('frame', update);
   build();
   bindEditor(app);
+}
+
+/** Scrolls a row that doesn't wrap (on a small screen) to show `card`, with the one after it. */
+function reveal(row: HTMLElement, card: HTMLElement): void {
+  const r = row.getBoundingClientRect();
+  const c = card.getBoundingClientRect();
+  const behavior = matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+  if (c.left < r.left) row.scrollBy({ left: c.left - r.left - 8, behavior });
+  else if (c.right + c.width / 2 > r.right) row.scrollBy({ left: c.left - r.left - 8, behavior });
 }
 
 function bindEditor(app: App): void {
@@ -72,6 +89,8 @@ function bindEditor(app: App): void {
   $('#edit-open').addEventListener('click', (e) => {
     editor.hidden = !editor.hidden;
     if (!editor.hidden) {
+      // On a short screen the editor is in the sheet ? pulls out, which may be put away.
+      if (editor.getClientRects().length === 0) app.set({ why: true });
       text.value = app.s.text;
       text.focus();
     }

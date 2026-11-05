@@ -10,34 +10,57 @@
     <div id="app">
       <header id="top">
         <div class="row">
+          <button
+            id="menu-open"
+            class="icon"
+            title="Menu"
+            aria-label="Menu"
+            aria-controls="menu"
+            aria-expanded="false"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M4 7h16M4 12h16M4 17h16"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              ></path>
+            </svg>
+          </button>
           <div class="seg" id="mode" role="tablist">
             <button data-mode="key" role="tab">Key</button>
             <button data-mode="progression" role="tab">Progression</button>
           </div>
-          <div class="seg" id="instrument" role="tablist">
+          <div class="seg" id="instrument" role="tablist" data-menu="sound">
             <button data-instrument="piano" role="tab">Piano</button>
             <button data-instrument="guitar" role="tab" title="Guitar mode is experimental">
               Guitar <span class="badge">experimental</span>
             </button>
           </div>
-          <label
+          <label data-menu="sound"
             >Home
             <select id="home"></select
           ></label>
-          <label
+          <label data-menu="sound"
             >Mood
             <select id="mood"></select
           ></label>
           <span id="tuning" class="quiet"></span>
-          <span id="midi" class="quiet"></span>
+          <span id="midi" class="quiet" data-menu="sound"></span>
           <span class="spacer"></span>
-          <button id="guitar-open" title="Guitar input, amp and tuning">
+          <button id="guitar-open" title="Guitar input, amp and tuning" data-menu="sound">
             <span class="light"></span>Guitar input
           </button>
-          <button id="record" title="Record until you press it again">● Record</button>
-          <button id="clip" title="Keep the last seconds of playing (Enter)">Clip</button>
-          <button id="clips-open">Clips</button>
-          <button id="settings-open" title="Settings">⚙</button>
+          <button id="record" title="Record until you press it again" data-menu="keep">
+            ● Record
+          </button>
+          <button id="clip" title="Keep the last seconds of playing (Enter)" data-menu="keep">
+            Clip
+          </button>
+          <button id="clips-open" data-menu="keep">Clips</button>
+          <button id="settings-open" title="Settings" aria-label="Settings" data-menu="more">
+            ⚙<span class="in-menu"> Settings</span>
+          </button>
           <button
             id="why-open"
             class="icon"
@@ -48,6 +71,7 @@
           </button>
           <a
             class="out"
+            data-menu="more"
             href="https://github.com/andrewbrooke/chordlight"
             target="_blank"
             rel="noopener noreferrer"
@@ -59,6 +83,7 @@
           >
           <a
             class="out"
+            data-menu="more"
             href="https://ko-fi.com/andrewbrooke"
             target="_blank"
             rel="noopener noreferrer"
@@ -70,7 +95,7 @@
           >
         </div>
         <div class="row" id="transport">
-          <label
+          <label data-menu="progression"
             >Preset
             <select id="preset"></select
           ></label>
@@ -78,48 +103,71 @@
             ▶ Play
           </button>
           <button id="pause" title="Pause or resume where it is" disabled>⏸︎ Pause</button>
-          <label
+          <label data-menu="progression"
             >BPM <input id="bpm" type="number" min="40" max="220" step="1" />
             <input id="bpm-slider" type="range" min="40" max="220" step="1"
           /></label>
-          <label class="check"><input id="countin" type="checkbox" /> count-in</label>
-          <label class="check"><input id="click-on" type="checkbox" /> click</label>
-          <label
+          <label class="check" data-menu="progression"
+            ><input id="countin" type="checkbox" /> count-in</label
+          >
+          <label class="check" data-menu="progression"
+            ><input id="click-on" type="checkbox" /> click</label
+          >
+          <label data-menu="progression"
             >Style
             <select id="style"></select
           ></label>
-          <label class="check"><input id="bass" type="checkbox" /> bass</label>
-          <button id="edit-open">Edit</button>
+          <label class="check" data-menu="progression"
+            ><input id="bass" type="checkbox" /> bass</label
+          >
+          <button id="edit-open" data-menu="progression">Edit</button>
         </div>
       </header>
 
-      <section id="above">
-        <div id="lane"></div>
-        <div id="editor" hidden>
+      <div id="menu" hidden>
+        <div class="sheet" role="dialog" aria-label="Controls">
           <div class="row">
-            <input id="prog-text" type="text" spellcheck="false" autocomplete="off" />
-            <button id="prog-apply" class="primary">Apply</button>
-            <span id="prog-error" class="error"></span>
+            <h2>Chordlight</h2>
+            <span class="spacer"></span>
+            <button id="menu-close">Close</button>
           </div>
-          <div class="row" id="prog-add"></div>
-          <div class="row">
-            <input id="save-name" type="text" placeholder="name your progression" />
-            <button id="save-mine">Save as mine</button>
-            <button id="delete-mine" hidden>Delete this one</button>
-          </div>
-          <p class="quiet">
-            Type numerals (<code>I V vi IV</code>, <code>bVII</code>, <code>ii7</code>,
-            <code>V/vi</code>) or chord names (<code>C G Am F</code>). <code>:2</code> after a chord
-            makes it last two beats.
-          </p>
+          <section data-section="sound"></section>
+          <section data-section="progression"><h3>Progression</h3></section>
+          <section data-section="keep"><h3>Keep what you play</h3></section>
+          <section data-section="more"></section>
         </div>
-        <div id="palette"></div>
-      </section>
+      </div>
+
+      <!-- On a short screen, a sheet over the keys that ? pulls out; elsewhere it has no box. -->
+      <div id="side">
+        <section id="above">
+          <div id="lane"></div>
+          <div id="editor" hidden>
+            <div class="row">
+              <input id="prog-text" type="text" spellcheck="false" autocomplete="off" />
+              <button id="prog-apply" class="primary">Apply</button>
+              <span id="prog-error" class="error"></span>
+            </div>
+            <div class="row" id="prog-add"></div>
+            <div class="row">
+              <input id="save-name" type="text" placeholder="name your progression" />
+              <button id="save-mine">Save as mine</button>
+              <button id="delete-mine" hidden>Delete this one</button>
+            </div>
+            <p class="quiet">
+              Type numerals (<code>I V vi IV</code>, <code>bVII</code>, <code>ii7</code>,
+              <code>V/vi</code>) or chord names (<code>C G Am F</code>). <code>:2</code> after a
+              chord makes it last two beats.
+            </p>
+          </div>
+          <div id="palette"></div>
+        </section>
+
+        <aside id="why"></aside>
+      </div>
 
       <div id="readout"><span id="now"></span><span id="holding"></span></div>
       <main id="stage"></main>
-
-      <aside id="why"></aside>
 
       <footer id="legend">
         <span class="swatch home">home</span>
@@ -130,7 +178,7 @@
         <span class="swatch star" id="legend-star">mood note</span>
         <span class="spacer"></span>
         <span id="octave" class="quiet"></span>
-        <label
+        <label data-menu="sound"
           >Labels
           <select id="labels"></select
         ></label>
@@ -312,10 +360,11 @@
           </ul>
           <button id="start-button" class="primary">Click to start</button>
           <button id="start-plain" hidden>Skip the tour</button>
-          <p class="quiet">
+          <p class="quiet keys-only">
             Play with the <code>Q</code> row: it plays the key's notes, and <code>Q</code>
             <code>E</code> <code>T</code> is the home chord.
           </p>
+          <p class="quiet touch-only">Tap the keys to play. Drag along them to glide.</p>
         </div>
       </div>
     </div>

@@ -7,7 +7,9 @@
 // with no place given (heard, played on a MIDI keyboard, replayed) goes to the place nearest the
 // hand, and the hand drifts towards each note played. Open strings cost nothing in first position.
 
-import { GUITAR } from '../tuning.js';
+import { STRINGS } from '../presets/tunings.js';
+import { GUITAR, STAGE } from '../tuning.js';
+import type { Shape, Unit } from './framing.js';
 
 export interface Spot {
   string: number;
@@ -44,6 +46,29 @@ export function neckColumns(frets: number): NeckColumns {
     wires.push(x);
   }
   return { names, nut, wires, cells, width };
+}
+
+/**
+ * The neck, for the stage to frame. A finger aims at a fret of average width. A section is whole
+ * frets, each with the wires either side of it; the first unit is the names, open strings and nut.
+ */
+export function neckShape(cols: NeckColumns): Shape {
+  const g = GUITAR;
+  const frets = cols.wires.length;
+  const half = g.wireWidth / 2;
+  const units: Unit[] = [[cols.names.x0, cols.nut.x1]];
+  cols.wires.forEach((wire, i) =>
+    units.push([i === 0 ? cols.nut.x0 : cols.wires[i - 1]! - half, wire + half]),
+  );
+  const fewest = Math.min(frets, STAGE.fewestFrets);
+  return {
+    width: cols.width,
+    minLength: STRINGS * g.minSpacing + g.numberRow,
+    maxLength: STRINGS * g.maxSpacing + g.numberRow,
+    touch: (cols.wires[frets - 1]! - cols.nut.x1) / frets,
+    fewest: units[fewest]![1] - units[0]![0],
+    units,
+  };
 }
 
 export const spotId = (s: Spot, frets: number): number => s.string * (frets + 1) + s.fret;

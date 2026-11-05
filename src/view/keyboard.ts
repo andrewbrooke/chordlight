@@ -1,6 +1,7 @@
 // Flat, top-down keyboard. Depth is implied by a front lip on every key, plus a lighter top and a
 // drop shadow on black keys; a press shrinks the lip and darkens the key. A light is a rail near the key's front plus
-// a marker for some (a ring on home, an arrow on lean). The stage sets the key length.
+// a marker for some (a ring on home, an arrow on lean). The stage sets the key length; below
+// KEYS.decorLength the markings shrink with it, since they have to fit in front of the black keys.
 //
 // The mood star shares the dot row: it only shows with no chord sounding, the dots only with one.
 
@@ -8,9 +9,10 @@ import * as THREE from 'three';
 import type { Light, Lights } from '../theory/guide.js';
 import { pcOf } from '../theory/pitch.js';
 import { COLOURS, GLOW, KEYS } from '../tuning.js';
+import type { Shape } from './framing.js';
 import type { InstrumentView, PressSource } from './instrument.js';
 import { Label, type PixelGrid } from './labels.js';
-import { layoutKeys } from './layout.js';
+import { keyboardShape, layoutKeys } from './layout.js';
 import * as shapes from './shapes.js';
 
 const LIGHT_COLOUR: Record<Light, THREE.Color> = {
@@ -126,23 +128,17 @@ class KeyView {
       basic('#ffffff', { map: this.label.texture, transparent: true, depthWrite: false }),
       y.label,
     );
-    const marker = (g: THREE.BufferGeometry, colour: string, dx = 0) => {
+    const marker = (g: THREE.BufferGeometry, colour: string) => {
       const m = flat(g, basic(colour), y.marker);
-      m.position.x = dx;
       m.visible = false;
-      if (black) m.scale.setScalar(0.75);
       return m;
     };
     const home = black ? COLOURS.home : COLOURS.homeOnWhite;
     this.ring = marker(geo.ring, home);
     this.arrow = marker(geo.arrow, COLOURS.lean);
     this.star = marker(geo.star, COLOURS.star);
-    this.nextDot = marker(
-      geo.dot,
-      black ? COLOURS.nextOnBlack : COLOURS.nextOnWhite,
-      black ? 0 : -0.45,
-    );
-    this.homeDot = marker(geo.dot, home, black ? 0 : 0.45);
+    this.nextDot = marker(geo.dot, black ? COLOURS.nextOnBlack : COLOURS.nextOnWhite);
+    this.homeDot = marker(geo.dot, home);
 
     this.group.add(this.face, this.lip, this.rail, this.labelMesh);
     this.group.add(this.ring, this.arrow, this.star, this.nextDot, this.homeDot);
@@ -151,21 +147,32 @@ class KeyView {
   }
 
   place(length: number, grid: PixelGrid): void {
+    const k = Math.min(1, length / KEYS.decorLength);
     this.back = -length / 2;
     this.front = this.black ? this.back + length * KEYS.blackRatio : length / 2;
-    this.lipFull = this.black ? KEYS.lipBlack : KEYS.lipWhite;
+    this.lipFull = (this.black ? KEYS.lipBlack : KEYS.lipWhite) * k;
     span(this.face, this.back, this.front);
     if (this.top) span(this.top, this.back + 0.1, this.front - this.lipFull);
     if (this.shadow) span(this.shadow, this.back, this.front + KEYS.shadow);
     const s = this.black ? SPOTS.black : SPOTS.white;
-    const at = (m: THREE.Object3D, fromFront: number) => (m.position.z = this.front - fromFront);
+    const at = (m: THREE.Object3D, fromFront: number) =>
+      (m.position.z = this.front - fromFront * k);
     at(this.rail, s.rail);
+    // Only the rail's depth shrinks: its width is the light, and the key is as wide as ever.
+    this.rail.scale.y = k;
     at(this.labelMesh, s.label);
-    this.fitLabel(grid);
+    this.fitLabel(grid, k);
+    const size = (this.black ? 0.75 : 1) * k;
+    for (const m of [this.ring, this.star, this.nextDot, this.homeDot]) m.scale.setScalar(size);
+    this.arrow.scale.set(Math.sign(this.arrow.scale.x) * size, size, size);
     for (const m of [this.ring, this.arrow]) at(m, s.marker);
     at(this.star, s.next);
     at(this.nextDot, s.next);
     at(this.homeDot, this.black ? s.next + 0.75 : s.next);
+    if (!this.black) {
+      this.nextDot.position.x = -0.45 * k;
+      this.homeDot.position.x = 0.45 * k;
+    }
     this.layLip();
   }
 
@@ -223,8 +230,8 @@ class KeyView {
   }
 
   /** One texel per device pixel, with the label's corner on a pixel corner. */
-  private fitLabel(grid: PixelGrid): void {
-    const { w, h } = this.label.fit(shapes.LABEL_WIDTH[this.black ? 'black' : 'white'], grid);
+  private fitLabel(grid: PixelGrid, k: number): void {
+    const { w, h } = this.label.fit(shapes.LABEL_WIDTH[this.black ? 'black' : 'white'] * k, grid);
     const m = this.labelMesh;
     const x = this.group.position.x;
     m.scale.set(w / grid.px, h / grid.pz, 1);
@@ -263,9 +270,7 @@ function shade(m: Flat, base: string, dim: number): void {
 
 export class KeyboardView implements InstrumentView {
   readonly group = new THREE.Group();
-  readonly width: number;
-  readonly minLength = KEYS.minLength;
-  readonly maxLength = KEYS.maxLength;
+  readonly shape: Shape;
   readonly faces: THREE.Object3D[] = [];
   private readonly keys = new Map<number, KeyView>();
   private readonly geo: shapes.Geometries;
@@ -275,7 +280,7 @@ export class KeyboardView implements InstrumentView {
     readonly hi: number,
   ) {
     const { spots, width } = layoutKeys(lo, hi);
-    this.width = width;
+    this.shape = keyboardShape(width);
     this.geo = shapes.build();
     for (const spot of spots) {
       const key = new KeyView(spot.midi, spot.black, spot.x, this.geo);
@@ -288,6 +293,37 @@ export class KeyboardView implements InstrumentView {
 
   place(length: number, grid: PixelGrid): void {
     for (const key of this.keys.values()) key.place(length, grid);
+  }
+
+  /** A black key on the edge of a section would be cut in half, so it goes. */
+  clip(from: number, to: number): void {
+    const half = KEYS.black / 2 + 1e-6;
+    for (const key of this.keys.values()) {
+      const x = key.group.position.x;
+      key.group.visible = !key.black || (x - half >= from && x + half <= to);
+    }
+  }
+
+  /** At the white key that is `lowest`, or the one below it. */
+  sectionFrom(lowest: number): number {
+    for (let m = lowest; m >= this.lo; m--) {
+      const key = this.keys.get(m);
+      if (key && !key.black) return key.group.position.x - KEYS.white / 2;
+    }
+    return -Infinity;
+  }
+
+  sketch(ctx: CanvasRenderingContext2D, x: (cm: number) => number, h: number): void {
+    const keys = [...this.keys.values()];
+    const box = (centre: number, width: number, height: number) => {
+      const a = Math.round(x(centre - width / 2));
+      ctx.fillRect(a, 0, Math.max(1, Math.round(x(centre + width / 2)) - a), height);
+    };
+    ctx.fillStyle = COLOURS.ivory;
+    for (const key of keys) if (!key.black) box(key.group.position.x, KEYS.white - KEYS.gap, h);
+    ctx.fillStyle = COLOURS.ebony;
+    const tall = Math.round(h * KEYS.blackRatio);
+    for (const key of keys) if (key.black) box(key.group.position.x, KEYS.black, tall);
   }
 
   setLights(lights: Lights, songHome: number): void {

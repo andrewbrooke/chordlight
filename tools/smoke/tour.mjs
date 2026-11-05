@@ -8,7 +8,7 @@ import { capOf, offsets } from 'chordlight/input/layouts.js';
 import { chordPcs } from 'chordlight/theory/chords.js';
 import { diatonicChords } from 'chordlight/theory/diatonic.js';
 import { MOODS, spellKey } from 'chordlight/theory/scales.js';
-import { placeCard } from 'chordlight/ui/tour-place.js';
+import { placeCard, placeCardFor } from 'chordlight/ui/tour-place.js';
 import { capsFor, STEPS } from 'chordlight/ui/tour-steps.js';
 import { check, done, same } from './kit/check.mjs';
 
@@ -42,6 +42,12 @@ function fakeApp(layout, home, mood) {
   return app;
 }
 
+const WHERES = [
+  { touch: false, compact: false, section: false },
+  { touch: true, compact: true, section: true },
+  { touch: false, compact: true, section: true },
+];
+
 const titles = STEPS.map((s) => s.title);
 same(new Set(titles).size, titles.length, 'step titles are unique');
 for (const step of STEPS) {
@@ -56,11 +62,20 @@ for (const layout of ['key', 'piano', 'rows']) {
       const label = `${layout}, ${app.key.name}`;
       for (const step of STEPS) {
         step.before?.(app);
-        const text = step.text(app);
-        check(
-          text.length > 20 && !/undefined|NaN/.test(text),
-          `${label}: "${step.title}" reads ${text}`,
-        );
+        for (const where of WHERES) {
+          const text = step.text(app, where);
+          check(
+            text.length > 20 && !/undefined|NaN/.test(text),
+            `${label}, ${JSON.stringify(where)}: "${step.title}" reads ${text}`,
+          );
+          // A phone has no computer keys: nothing may tell it to press one.
+          if (where.touch) {
+            check(
+              !/\b(Space|Enter|[QZM]\b|click)/.test(text),
+              `${label}, on touch: "${step.title}" names a key or a click: ${text}`,
+            );
+          }
+        }
       }
       const I = diatonicChords(app.key)[0];
       const caps = capsFor(app, chordPcs(I));
@@ -108,6 +123,34 @@ for (const [vw, vh] of [
     placed++;
   }
 }
+// On a phone the readout and the keys fill the screen between them; the card keeps the readout in
+// sight rather than covering it, upright (readout over the keys) and sideways (in the bar).
+for (const [vw, vh, readout, stage] of [
+  [
+    390,
+    660,
+    { left: 6, top: 110, right: 384, bottom: 150 },
+    { left: 0, top: 144, right: 390, bottom: 636 },
+  ],
+  [
+    844,
+    350,
+    { left: 300, top: 0, right: 544, bottom: 46 },
+    { left: -6, top: 44, right: 850, bottom: 356 },
+  ],
+]) {
+  const [w, h] = [Math.min(vh > 520 ? 300 : 420, vw - 20), 170];
+  const { x, y } = placeCardFor([readout, stage], w, h, vw, vh, 10, 10);
+  const card = { left: x, top: y, right: x + w, bottom: y + h };
+  check(!overlaps(card, readout), `${vw}x${vh}: the card covers the readout`);
+  check(card.bottom <= vh - 10 && card.top >= 10, `${vw}x${vh}: the card is off screen`);
+}
+same(
+  placeCardFor([{ left: 100, top: 100, right: 200, bottom: 140 }], 300, 170, 1000, 600, 10, 10),
+  placeCard({ left: 100, top: 100, right: 200, bottom: 140 }, 300, 170, 1000, 600, 10, 10),
+  'one target is placed as placeCard places it',
+);
+
 const centred = placeCard(null, 300, 170, 1000, 600, 10, 10);
 same(centred, { x: 350, y: 215 }, 'with no target the card is centred');
 

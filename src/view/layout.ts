@@ -2,7 +2,8 @@
 // slots, F–B into seven), so they are not centred between white keys.
 
 import { pcOf } from '../theory/pitch.js';
-import { KEYS } from '../tuning.js';
+import { KEYS, STAGE } from '../tuning.js';
+import type { Shape } from './framing.js';
 
 const BLACK = [false, true, false, true, false, false, true, false, true, false, true, false];
 
@@ -21,6 +22,21 @@ export interface Spot {
   midi: number;
   black: boolean;
   x: number;
+}
+
+/** A keyboard `width` cm across, for the stage to frame. A section is whole white keys. */
+export function keyboardShape(width: number): Shape {
+  const W = KEYS.white;
+  const whites = Math.round(width / W);
+  return {
+    width,
+    minLength: KEYS.minLength,
+    maxLength: KEYS.maxLength,
+    touch: W,
+    // Any run of this many white keys holds at least the fewest keys, black ones and all.
+    fewest: Math.ceil((STAGE.fewestKeys * 7) / 12) * W,
+    units: Array.from({ length: whites }, (_, k) => [-width / 2 + k * W, -width / 2 + (k + 1) * W]),
+  };
 }
 
 export function layoutKeys(lo: number, hi: number): { spots: Spot[]; width: number } {

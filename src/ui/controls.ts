@@ -161,9 +161,11 @@ export function bindControls(app: App): void {
     presets(app, preset);
     const playing = app.audio?.transport.playing ?? false;
     const paused = app.audio?.transport.paused ?? false;
-    play.textContent = playing ? '■ Stop' : '▶ Play';
+    if (playing) caption(play, '■', 'Stop');
+    else caption(play, '▶', 'Play');
     pause.disabled = !playing && !paused;
-    pause.textContent = paused ? '▶ Resume' : '⏸︎ Pause';
+    if (paused) caption(pause, '▶', 'Resume');
+    else caption(pause, '⏸︎', 'Pause');
     if (document.activeElement !== bpm) bpm.value = String(s.bpm);
     slider.value = String(s.bpm);
     $<HTMLInputElement>('#countin').checked = s.countIn;
@@ -226,6 +228,13 @@ function presets(app: App, select: HTMLSelectElement): void {
   }
   select.replaceChildren(...nodes);
   select.value = app.s.preset;
+}
+
+/** An icon and a word. The narrowest screens hide the word, so it's also the button's name. */
+function caption(button: HTMLButtonElement, icon: string, word: string): void {
+  if (button.getAttribute('aria-label') === word) return;
+  button.setAttribute('aria-label', word);
+  button.replaceChildren(`${icon} `, el('span', { className: 'word', text: word }));
 }
 
 function drawer(panel: string, open: string, close: string): void {

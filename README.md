@@ -35,13 +35,19 @@ each note is lit the way it is.
 - **Synthesised piano:** no samples to download. All sound is generated in the browser.
 - **Input:** computer keyboard, mouse or touch, MIDI keyboards, and a guitar through an audio
   interface.
+- **Phones and tablets:** on a small screen the controls fold behind a ☰ menu, leaving the mode,
+  Play and Pause in the bar. Where the whole keyboard or neck would be too small to touch, a
+  section of it with finger-sized keys is shown (never fewer than 16 keys), with a strip above it
+  to drag along the rest. Held sideways, the keys take the whole screen and the chord cards and
+  explanations pull out from `?`.
 - **A first-visit tour** of the basics, finished mostly by playing. Skip it from the start screen
   or at any step with `Esc`, and replay it from Settings.
 
 ## Requirements
 
 - Node.js 20.11 or newer.
-- A current desktop browser. For a MIDI keyboard, Chrome or Edge is the smoothest option.
+- A current browser, on a computer, tablet or phone. For a MIDI keyboard, Chrome or Edge is the
+  smoothest option.
 - For guitar input, an audio interface with an instrument input (a Focusrite Scarlett, say), and
   permission for the page to use the microphone, which is how browsers reach audio inputs.
 

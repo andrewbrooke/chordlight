@@ -11,6 +11,15 @@ export function load<T>(name: string, fallback: T): T {
   }
 }
 
+/** Whether anything has been saved under `name`. */
+export function saved(name: string): boolean {
+  try {
+    return localStorage.getItem(PREFIX + name) !== null;
+  } catch {
+    return false;
+  }
+}
+
 export function loadList<T>(name: string): T[] {
   try {
     const raw = localStorage.getItem(PREFIX + name);

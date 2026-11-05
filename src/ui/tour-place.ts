@@ -1,5 +1,7 @@
 // Where the tour's card goes: beside its target if a side has room, else on the roomiest side,
-// overlapping the target as little as the viewport allows.
+// overlapping the target as little as the viewport allows. A step with several targets that fill
+// the screen between them (the readout and the keys, on a phone) puts the card beside its first one
+// instead, so that one at least stays in sight.
 
 export interface Rect {
   left: number;
@@ -33,21 +35,47 @@ export function placeCard(
   gap: number,
   margin: number,
 ): { x: number; y: number } {
-  const midX = (r: Rect) => clamp((r.left + r.right) / 2 - w / 2, margin, vw - w - margin);
-  const midY = (r: Rect) => clamp((r.top + r.bottom) / 2 - h / 2, margin, vh - h - margin);
-  if (!target) {
-    const all = { left: 0, top: 0, right: vw, bottom: vh };
-    return { x: midX(all), y: midY(all) };
-  }
-  const sides = [
-    { room: vh - target.bottom, need: h, at: () => ({ x: midX(target), y: target.bottom + gap }) },
-    { room: target.top, need: h, at: () => ({ x: midX(target), y: target.top - gap - h }) },
-    { room: vw - target.right, need: w, at: () => ({ x: target.right + gap, y: midY(target) }) },
-    { room: target.left, need: w, at: () => ({ x: target.left - gap - w, y: midY(target) }) },
-  ];
-  const clear = sides.find((s) => s.room >= s.need + gap + margin);
-  if (clear) return clear.at();
-  const roomiest = sides.reduce((a, b) => (b.room / b.need > a.room / a.need ? b : a));
-  const { x, y } = roomiest.at();
+  if (!target) return { x: mid(0, vw, w, vw, margin), y: mid(0, vh, h, vh, margin) };
+  const options = sides(target, w, h, vw, vh, gap, margin);
+  const clear = options.find((s) => s.room >= s.need + gap + margin);
+  if (clear) return clear.at;
+  const roomiest = options.reduce((a, b) => (b.room / b.need > a.room / a.need ? b : a));
+  const { x, y } = roomiest.at;
   return { x: clamp(x, margin, vw - w - margin), y: clamp(y, margin, vh - h - margin) };
+}
+
+/** As placeCard for several targets, the one to keep in sight first. */
+export function placeCardFor(
+  targets: readonly Rect[],
+  w: number,
+  h: number,
+  vw: number,
+  vh: number,
+  gap: number,
+  margin: number,
+): { x: number; y: number } {
+  if (targets.length === 0) return placeCard(null, w, h, vw, vh, gap, margin);
+  const all = union(targets);
+  for (const target of targets.length > 1 ? [all, targets[0]!] : [all]) {
+    const clear = sides(target, w, h, vw, vh, gap, margin).find(
+      (s) => s.room >= s.need + gap + margin,
+    );
+    if (clear) return clear.at;
+  }
+  return placeCard(all, w, h, vw, vh, gap, margin);
+}
+
+const mid = (a: number, b: number, size: number, view: number, margin: number) =>
+  clamp((a + b) / 2 - size / 2, margin, view - size - margin);
+
+/** Below, above, right and left of the target, in that order of preference. */
+function sides(t: Rect, w: number, h: number, vw: number, vh: number, gap: number, margin: number) {
+  const x = mid(t.left, t.right, w, vw, margin);
+  const y = mid(t.top, t.bottom, h, vh, margin);
+  return [
+    { room: vh - t.bottom, need: h, at: { x, y: t.bottom + gap } },
+    { room: t.top, need: h, at: { x, y: t.top - gap - h } },
+    { room: vw - t.right, need: w, at: { x: t.right + gap, y } },
+    { room: t.left, need: w, at: { x: t.left - gap - w, y } },
+  ];
 }

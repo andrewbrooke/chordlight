@@ -38,11 +38,12 @@ import { chordLights, hintsAfter, keyLights, type Lights } from './theory/guide.
 import { nameOf, pcOf } from './theory/pitch.js';
 import { parseProgression, progressionText, type Step } from './theory/roman.js';
 import { degreeLabel, type SpelledKey, spellKey } from './theory/scales.js';
-import { BACKING, CLIPS, GUITAR, PLAY } from './tuning.js';
-import { load, loadList, save } from './ui/storage.js';
+import { BACKING, CLIPS, COMPACT, GUITAR, PLAY } from './tuning.js';
+import { load, loadList, save, saved } from './ui/storage.js';
 import type { InstrumentView } from './view/instrument.js';
 import { KeyboardView } from './view/keyboard.js';
 import { NeckView } from './view/neck.js';
+import { Overview } from './view/overview.js';
 import { Stage } from './view/stage.js';
 
 export interface Audio {
@@ -133,11 +134,18 @@ export class App {
     this.s.amp = ampSettings(this.s.amp);
     if (!isTuning(this.s.tuning)) this.s.tuning = [...DEFAULTS.tuning];
     if (this.s.instrument !== 'guitar') this.s.instrument = 'piano';
+    // A first visit from a touch screen: key caps are noise with no computer keys to play them, and
+    // on a small one the explanations start put away, since there they cover the keys.
+    if (!saved('settings') && matchMedia('(pointer: coarse)').matches) {
+      this.s.caps = false;
+      if (matchMedia(COMPACT).matches) this.s.why = false;
+    }
     // A binding saved for a button that no longer exists (an early Stop) would swallow its control.
     this.s.midiButtons = Object.fromEntries(
       Object.entries(this.s.midiButtons).filter(([b]) => MIDI_BUTTONS.includes(b as MidiButton)),
     );
     this.stage = new Stage(stageHost);
+    new Overview(stageHost, this.stage);
     this.view = this.buildView();
     this.keys = new ComputerKeys({
       noteOn: (m) => this.noteOn(m),
@@ -150,6 +158,7 @@ export class App {
     });
     this.keys.setLayout(this.s.keyLayout, this.s.home, this.key.mood.steps);
     this.keys.base = this.s.base;
+    this.showKeys();
     this.guitar = new GuitarLink({
       audio: () => {
         const { engine, amp } = this.startAudio();
@@ -240,8 +249,8 @@ export class App {
       this.restartDrone();
     }
     if (changed('text')) this.reparse();
-    if (changed('range') || changed('instrument') || changed('tuning'))
-      this.view = this.buildView();
+    const rebuilt = changed('range') || changed('instrument') || changed('tuning');
+    if (rebuilt) this.view = this.buildView();
     if (changed('tuning')) this.guitar.configure();
     if (changed('instrument')) {
       // Piano mode doesn't listen; guitarOn stays, so guitar mode picks the input up again.
@@ -250,8 +259,10 @@ export class App {
     }
     // Held keys keep their notes across an octave or key change; a layout change releases them.
     if (changed('keyLayout')) this.keys.releaseAll();
+    const lowest = this.keys.span()[0];
     this.keys.setLayout(this.s.keyLayout, this.s.home, this.key.mood.steps);
     this.keys.base = this.s.base;
+    if (rebuilt || this.keys.span()[0] !== lowest) this.showKeys();
     if (changed('mode')) {
       this.audio?.transport.stop();
       this.heldChord = null;
@@ -358,6 +369,11 @@ export class App {
     this.signature = '';
     this.nextSignature = '';
     return view;
+  }
+
+  /** When the stage shows a section of the keyboard, it starts at the computer keys' lowest note. */
+  private showKeys(): void {
+    this.stage.pan(this.view.sectionFrom(this.keys.span()[0]));
   }
 
   /** `where` is the place on the neck it was played, when the pointer knows. */

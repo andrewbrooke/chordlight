@@ -11,12 +11,14 @@ import { STRINGS, stringName } from '../presets/tunings.js';
 import type { Light, Lights } from '../theory/guide.js';
 import { pcOf } from '../theory/pitch.js';
 import { COLOURS, GLOW, GUITAR, KEYS } from '../tuning.js';
+import type { Shape } from './framing.js';
 import type { InstrumentView, PressSource } from './instrument.js';
 import { Label, type PixelGrid } from './labels.js';
 import {
   follow,
   type NeckColumns,
   neckColumns,
+  neckShape,
   nearestPlace,
   type Spot,
   spotId,
@@ -243,9 +245,7 @@ class Place {
 export class NeckView implements InstrumentView {
   readonly group = new THREE.Group();
   readonly faces: THREE.Object3D[] = [];
-  readonly width: number;
-  readonly minLength: number;
-  readonly maxLength: number;
+  readonly shape: Shape;
   readonly lo: number;
   readonly hi: number;
   private readonly cols: NeckColumns;
@@ -268,9 +268,7 @@ export class NeckView implements InstrumentView {
   ) {
     const g = GUITAR;
     this.cols = neckColumns(frets);
-    this.width = this.cols.width;
-    this.minLength = STRINGS * g.minSpacing + g.numberRow;
-    this.maxLength = STRINGS * g.maxSpacing + g.numberRow;
+    this.shape = neckShape(this.cols);
     this.lo = Math.min(...tuning);
     this.hi = Math.max(...tuning) + frets;
     this.geo = { ...shapes.build(), hoop: new THREE.RingGeometry(0.5, 0.58, 48) };
@@ -325,7 +323,7 @@ export class NeckView implements InstrumentView {
         this.group.add(...place.meshes);
       }
     });
-    this.place(this.minLength, { x0: 0, z0: 0, px: 20, pz: 20 });
+    this.place(this.shape.minLength, { x0: 0, z0: 0, px: 20, pz: 20 });
   }
 
   place(length: number, grid: PixelGrid): void {
@@ -371,6 +369,40 @@ export class NeckView implements InstrumentView {
       const cell = cols.cells[place.spot.fret]!;
       const x = (cell.x0 + cell.x1) / 2;
       place.place(x, zOf(place.spot.string), cell.x1 - cell.x0, spacing, size, grid);
+    }
+  }
+
+  /** Nothing to hide: sections end at fret wires, and everything else sits inside a fret. */
+  clip(): void {}
+
+  /** At the string names: any note can be played near the nut. */
+  sectionFrom(): number {
+    return this.cols.names.x0;
+  }
+
+  sketch(ctx: CanvasRenderingContext2D, x: (cm: number) => number, h: number): void {
+    const g = GUITAR;
+    const { cols } = this;
+    const band = (x0: number, x1: number, colour: string, y0 = 0, y1 = h) => {
+      const a = Math.round(x(x0));
+      ctx.fillStyle = colour;
+      ctx.fillRect(a, y0, Math.max(1, Math.round(x(x1)) - a), y1 - y0);
+    };
+    band(cols.nut.x0, cols.wires[this.frets - 1]! + g.overhang, COLOURS.board);
+    band(cols.nut.x0, cols.nut.x1, COLOURS.nut);
+    for (const wire of cols.wires)
+      band(wire - g.wireWidth / 2, wire + g.wireWidth / 2, COLOURS.fret);
+    ctx.fillStyle = COLOURS.inlay;
+    for (const { fret, between } of this.inlays) {
+      const cell = cols.cells[fret]!;
+      ctx.beginPath();
+      const y = ((between[0] + between[1] + 1) / 2 / STRINGS) * h;
+      ctx.arc(x((cell.x0 + cell.x1) / 2), y, Math.max(1.5, h * 0.08), 0, 2 * Math.PI);
+      ctx.fill();
+    }
+    for (let s = 0; s < STRINGS; s++) {
+      const y = Math.round(((s + 0.5) / STRINGS) * h);
+      band(cols.cells[0]!.x0, cols.wires[this.frets - 1]!, COLOURS.plain, y, y + 1);
     }
   }
 
