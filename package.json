@@ -19,6 +19,7 @@
     "dev": "npm run build && node server.mjs",
     "smoke": "npm run build && node tools/smoke/run.mjs",
     "render": "npm run build && node tools/render/render.mjs",
+    "hear": "npm run build && node tools/listen/replay.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "site": "npm run build && node tools/site/build.mjs"

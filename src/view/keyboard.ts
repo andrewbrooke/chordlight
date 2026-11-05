@@ -8,11 +8,10 @@ import * as THREE from 'three';
 import type { Light, Lights } from '../theory/guide.js';
 import { pcOf } from '../theory/pitch.js';
 import { COLOURS, GLOW, KEYS } from '../tuning.js';
+import type { InstrumentView, PressSource } from './instrument.js';
 import { Label, type PixelGrid } from './labels.js';
 import { layoutKeys } from './layout.js';
 import * as shapes from './shapes.js';
-
-export type PressSource = 'user' | 'clip';
 
 const LIGHT_COLOUR: Record<Light, THREE.Color> = {
   home: new THREE.Color(COLOURS.home),
@@ -97,7 +96,7 @@ class KeyView {
       y.face,
     );
     this.face.scale.x = width;
-    this.face.userData['midi'] = midi;
+    this.face.userData = { midi };
     this.lip = flat(geo.unit, basic(black ? COLOURS.ebonyLip : COLOURS.ivoryLip), y.lip);
     this.lip.scale.x = black ? width - 0.3 : width;
     this.top = black
@@ -262,9 +261,11 @@ function shade(m: Flat, base: string, dim: number): void {
   m.material.color.set(base).multiplyScalar(dim);
 }
 
-export class KeyboardView {
+export class KeyboardView implements InstrumentView {
   readonly group = new THREE.Group();
   readonly width: number;
+  readonly minLength = KEYS.minLength;
+  readonly maxLength = KEYS.maxLength;
   readonly faces: THREE.Object3D[] = [];
   private readonly keys = new Map<number, KeyView>();
   private readonly geo: shapes.Geometries;
@@ -300,7 +301,6 @@ export class KeyboardView {
     for (const key of this.keys.values()) key.label.set(...text(key.midi));
   }
 
-  /** null clears the marks. */
   setNext(has: readonly boolean[] | null): void {
     for (const key of this.keys.values()) key.setNext(has?.[pcOf(key.midi)] === true);
   }

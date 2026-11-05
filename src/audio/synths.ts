@@ -127,7 +127,13 @@ export function drive(
   return handle(oscs, env, time, 0.02);
 }
 
-export function click(engine: Engine, time: number, accent: boolean): void {
+/** `into` defaults to the click bus; the guitar setup's timing step uses its own, at a set level. */
+export function click(
+  engine: Engine,
+  time: number,
+  accent: boolean,
+  into: AudioNode = engine.buses.click,
+): void {
   const ctx = engine.ctx;
   const o = ctx.createOscillator();
   o.frequency.value = accent ? 1660 : 1100;
@@ -135,7 +141,7 @@ export function click(engine: Engine, time: number, accent: boolean): void {
   env.gain.setValueAtTime(0, time);
   env.gain.linearRampToValueAtTime(accent ? 0.6 : 0.4, time + 0.002);
   env.gain.setTargetAtTime(0, time + 0.002, 0.012);
-  o.connect(env).connect(engine.buses.click);
+  o.connect(env).connect(into);
   o.start(time);
   o.stop(time + 0.1);
 }

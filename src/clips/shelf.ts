@@ -82,7 +82,7 @@ export class ClipShelf {
     if (!clip) return;
     // A clip brings its own backing; the live one would play over it out of time.
     this.app.pause();
-    const { engine, piano } = this.app.startAudio();
+    const { engine, piano, guitar } = this.app.startAudio();
     const start = engine.now + 0.05;
     for (const { on, off } of pairs(clip.events)) {
       const t0 = start + on.t;
@@ -90,6 +90,9 @@ export class ClipShelf {
       if (on.voice === 'piano') {
         piano.noteOn('clip', on.midi, on.vel, t0);
         piano.noteOff('clip', on.midi, t1);
+      } else if (on.voice === 'guitar') {
+        guitar.noteOn('clip', on.midi, on.vel, t0);
+        guitar.noteOff('clip', on.midi, t1);
       } else {
         this.pads.push(pad(engine, on.midi, t0, BACKING.droneLevel, t1));
       }
@@ -117,6 +120,7 @@ export class ClipShelf {
     const audio = this.app.audio;
     if (audio) {
       audio.piano.allOff('clip');
+      audio.guitar.allOff('clip');
       for (const p of this.pads) p.stop(audio.engine.now);
     }
     this.pads = [];

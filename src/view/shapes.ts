@@ -11,6 +11,8 @@ export interface Geometries {
   arrow: THREE.BufferGeometry;
   star: THREE.BufferGeometry;
   dot: THREE.BufferGeometry;
+  /** Unit-diameter circle: the neck's note dots and inlays. */
+  disc: THREE.BufferGeometry;
 }
 
 export const LABEL_ASPECT = 1.25;
@@ -27,6 +29,7 @@ export function build(): Geometries {
     arrow: arrow(),
     star: star(),
     dot: new THREE.CircleGeometry(0.2, 24),
+    disc: new THREE.CircleGeometry(0.5, 40),
   };
 }
 

@@ -23,6 +23,8 @@ export class ComputerKeys {
   private readonly notes = new Map<string, number>();
   private readonly chords = new Set<string>();
   private readonly shifts = new Set<string>();
+  /** While a dialog is open, keys are its own: Space and Enter press its buttons. */
+  paused = false;
 
   constructor(private readonly actions: KeyActions) {
     window.addEventListener('keydown', (e) => this.down(e));
@@ -55,7 +57,7 @@ export class ComputerKeys {
   }
 
   private down(e: KeyboardEvent): void {
-    if (typing(e) || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (this.paused || typing(e) || e.ctrlKey || e.metaKey || e.altKey) return;
     const code = e.code;
     const offset = this.map.get(code);
     const chord = CHORD_CODES.indexOf(code);

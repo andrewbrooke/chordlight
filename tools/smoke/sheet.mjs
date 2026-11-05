@@ -77,6 +77,24 @@ same(
   'a bass note let go early keeps its length',
 );
 same(s.chords, [{ beat: 0, name: 'C' }], 'the backing names the chord');
+
+// Notes heard from a guitar are the player's notes too.
+const guitar = scoreOf(
+  clip([
+    [0, 1, 64, 'guitar'],
+    [1, 1, 67, 'guitar'],
+    [2, 2, 69, 'guitar'],
+  ]),
+);
+same(
+  guitar.staves[0].notes.map((n) => [n.start, n.beats]),
+  [
+    [0, 1],
+    [1, 1],
+    [2, 2],
+  ],
+  'a guitar line is written like a played one',
+);
 same([s.bars, s.loose, s.bpm], [1, false, bpm], 'one bar on the backing beat');
 
 const eighths = scoreOf(

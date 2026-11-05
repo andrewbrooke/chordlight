@@ -14,6 +14,12 @@
             <button data-mode="key" role="tab">Key</button>
             <button data-mode="progression" role="tab">Progression</button>
           </div>
+          <div class="seg" id="instrument" role="tablist">
+            <button data-instrument="piano" role="tab">Piano</button>
+            <button data-instrument="guitar" role="tab" title="Guitar mode is experimental">
+              Guitar <span class="badge">experimental</span>
+            </button>
+          </div>
           <label
             >Home
             <select id="home"></select
@@ -25,6 +31,9 @@
           <span id="tuning" class="quiet"></span>
           <span id="midi" class="quiet"></span>
           <span class="spacer"></span>
+          <button id="guitar-open" title="Guitar input, amp and tuning">
+            <span class="light"></span>Guitar input
+          </button>
           <button id="record" title="Record until you press it again">● Record</button>
           <button id="clip" title="Keep the last seconds of playing (Enter)">Clip</button>
           <button id="clips-open">Clips</button>
@@ -165,7 +174,7 @@
           <button id="settings-close">Close</button>
         </div>
         <div class="grid">
-          <label
+          <label id="range-row"
             >Keyboard
             <select id="range"></select
           ></label>
@@ -203,6 +212,91 @@
           <code>Space</code> plays and stops, <code>Enter</code> takes a clip.
         </p>
         <button id="tour-again">Show the tour again</button>
+      </div>
+
+      <div id="guitar" class="panel" hidden>
+        <div class="row">
+          <h2>Guitar</h2>
+          <span class="badge">experimental</span>
+          <span class="spacer"></span>
+          <button id="guitar-close">Close</button>
+        </div>
+        <p id="guitar-status"></p>
+        <div class="row">
+          <button id="guitar-listen" class="primary">Plug in my guitar</button>
+          <button id="guitar-stop">Stop listening</button>
+          <button id="guitar-setup-open">Set up</button>
+        </div>
+        <div class="grid">
+          <label id="guitar-device-row"
+            >Input
+            <select id="guitar-device"></select
+          ></label>
+          <div id="guitar-meter-row" class="live">
+            <div id="guitar-meter" class="meter"><i></i></div>
+            <span id="guitar-heard"></span>
+          </div>
+        </div>
+        <div id="guitar-record-row" class="row">
+          <button id="guitar-record">● Record input</button>
+          <span class="quiet"
+            >Saves what Chordlight hears from your guitar as a WAV file, to send with a report of
+            notes it gets wrong.</span
+          >
+        </div>
+        <h3>Amp</h3>
+        <label class="check"
+          ><input id="amp-monitor" type="checkbox" /> hear my guitar through Chordlight</label
+        >
+        <div class="grid">
+          <label
+            >Sound
+            <select id="amp-sound"></select
+          ></label>
+        </div>
+        <div class="knobs">
+          <label>Drive <input id="amp-drive" type="range" min="0" max="1" step="0.01" /></label>
+          <label>Bass <input id="amp-bass" type="range" min="0" max="1" step="0.01" /></label>
+          <label>Mid <input id="amp-mid" type="range" min="0" max="1" step="0.01" /></label>
+          <label>Treble <input id="amp-treble" type="range" min="0" max="1" step="0.01" /></label>
+          <label>Volume <input id="level-guitar" type="range" min="0" max="1" step="0.01" /></label>
+          <button id="amp-reset" title="Put the knobs back where this sound starts">
+            Reset knobs
+          </button>
+        </div>
+        <p class="quiet">
+          If what you hear lags behind your playing, untick this and turn on your interface's direct
+          monitoring, if it has it. Clicking the neck plays through the amp either way.
+        </p>
+        <h3>Tuning</h3>
+        <div class="grid">
+          <label
+            >Tuning
+            <select id="tuning-preset"></select
+          ></label>
+        </div>
+        <div id="tuning-strings" class="strings"></div>
+        <p class="quiet">
+          Guitar mode is experimental. It hears one note at a time: single notes, riffs and melodies
+          light up and record, but strummed chords don't yet. A note can be played in several places
+          on the neck, so the one lit is a guess at where your hand is.
+        </p>
+      </div>
+
+      <div id="setup" hidden>
+        <div class="card">
+          <p id="setup-step" class="quiet"></p>
+          <h2 id="setup-title"></h2>
+          <div id="setup-text"></div>
+          <div id="setup-show"></div>
+          <p id="setup-say" class="say"></p>
+          <div class="row">
+            <button id="setup-cancel">Close</button>
+            <span class="spacer"></span>
+            <button id="setup-skip">Skip this step</button>
+            <button id="setup-next" class="primary">Next</button>
+          </div>
+        </div>
       </div>
 
       <div id="start" hidden>

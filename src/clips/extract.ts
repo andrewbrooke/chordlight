@@ -1,8 +1,11 @@
 // Cuts clips from the note log. `extractClip` takes the notes that started in the last N seconds,
 // shifted to begin just before the first one; `cutClip` takes a recording exactly as it was framed.
-// Either way, notes still held end at the cut.
+// Either way, notes still held end at the cut. A guitar note that ended almost as it began was the
+// detector slipping, not playing, and is left out.
 
-export type ClipVoice = 'piano' | 'pad';
+import { CLIPS } from '../tuning.js';
+
+export type ClipVoice = 'piano' | 'pad' | 'guitar';
 
 export interface NoteEvent {
   /** Audio-clock seconds in the log; seconds from the clip start once extracted. */
@@ -48,19 +51,23 @@ function notesBetween(
 ): { on: NoteEvent; off: number }[] {
   const open = new Map<string, NoteEvent>();
   const notes: { on: NoteEvent; off: number }[] = [];
+  const ended = (on: NoteEvent, off: number) => {
+    if (on.voice !== 'guitar' || off - on.t >= CLIPS.shortestHeard) notes.push({ on, off });
+  };
   for (const e of log) {
     const id = `${e.voice}:${e.midi}`;
     if (e.on) {
       const prev = open.get(id);
-      if (prev) notes.push({ on: prev, off: e.t });
+      if (prev) ended(prev, e.t);
       if (e.t >= from && e.t <= to) open.set(id, e);
       else open.delete(id);
     } else {
       const start = open.get(id);
-      if (start) notes.push({ on: start, off: Math.min(e.t, to) });
+      if (start) ended(start, Math.min(e.t, to));
       open.delete(id);
     }
   }
+  // Still sounding at the cut: however short it is in the clip, it was played.
   for (const start of open.values()) notes.push({ on: start, off: to });
   return notes;
 }

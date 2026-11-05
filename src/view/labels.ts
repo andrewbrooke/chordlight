@@ -1,6 +1,6 @@
 // Per-key label textures, drawn at the size they appear on screen so each texel covers one device
 // pixel; a larger canvas scaled down through mipmaps reads soft. Redrawn when the text or the size
-// changes.
+// changes. A centred label is square and has one line, for the neck's dots and margins.
 
 import * as THREE from 'three';
 import { LABEL_ASPECT } from './shapes.js';
@@ -19,7 +19,10 @@ export class Label {
   private main = '';
   private sub = '';
 
-  constructor(private readonly black: boolean) {
+  constructor(
+    private readonly black: boolean,
+    private readonly centred = false,
+  ) {
     const canvas = document.createElement('canvas');
     this.ctx = canvas.getContext('2d')!;
     this.texture = new THREE.CanvasTexture(canvas);
@@ -38,7 +41,7 @@ export class Label {
   /** Sizes the canvas for a label `width` cm wide on the grid; returns its size in pixels. */
   fit(width: number, grid: PixelGrid): { w: number; h: number } {
     const w = Math.max(1, Math.round(width * grid.px));
-    const h = Math.max(1, Math.round(width * LABEL_ASPECT * grid.pz));
+    const h = Math.max(1, Math.round(width * (this.centred ? 1 : LABEL_ASPECT) * grid.pz));
     const canvas = this.ctx.canvas;
     if (canvas.width !== w || canvas.height !== h) {
       canvas.width = w;
@@ -58,6 +61,13 @@ export class Label {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = this.black ? '#f2ece1' : '#2b241e';
+    if (this.centred) {
+      const size = Math.round(((main.length > 2 ? 44 : 56) / 128) * w);
+      ctx.font = `650 ${size}px system-ui, sans-serif`;
+      ctx.fillText(main, w / 2, Math.round(h * 0.52));
+      this.texture.needsUpdate = true;
+      return;
+    }
     const size = Math.round(((main.length > 3 ? 40 : main.length > 2 ? 48 : 60) / 128) * w);
     ctx.font = `600 ${size}px system-ui, sans-serif`;
     ctx.fillText(main, w / 2, Math.round(h * 0.36));

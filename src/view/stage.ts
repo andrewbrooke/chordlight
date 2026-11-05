@@ -1,5 +1,5 @@
-// Orthographic top-down view. The keyboard fills the width and its keys stretch to fill the height,
-// within KEYS.minLength and maxLength; at the minimum it is fitted by height instead.
+// Orthographic top-down view. The instrument fills the width and stretches to fill the height,
+// within its own minLength and maxLength; at the minimum it is fitted by height instead.
 //
 // The drawing buffer is sized from the canvas's exact device-pixel box rather than CSS size times
 // devicePixelRatio: a fractional layout width or a 125% display scale otherwise leaves the buffer a
@@ -7,14 +7,14 @@
 
 import * as THREE from 'three';
 import { COLOURS, KEYS } from '../tuning.js';
-import type { KeyboardView } from './keyboard.js';
+import type { InstrumentView, Target } from './instrument.js';
 
 export class Stage {
   readonly renderer: THREE.WebGLRenderer;
   readonly scene = new THREE.Scene();
   private readonly camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 1, 100);
   private readonly raycaster = new THREE.Raycaster();
-  private keyboard: KeyboardView | null = null;
+  private view: InstrumentView | null = null;
   /** Device pixels. */
   private width = 0;
   private height = 0;
@@ -29,10 +29,10 @@ export class Stage {
     this.observe();
   }
 
-  setKeyboard(kb: KeyboardView): void {
-    if (this.keyboard) this.scene.remove(this.keyboard.group);
-    this.keyboard = kb;
-    this.scene.add(kb.group);
+  setView(view: InstrumentView): void {
+    if (this.view) this.scene.remove(this.view.group);
+    this.view = view;
+    this.scene.add(view.group);
     this.fit();
   }
 
@@ -40,16 +40,16 @@ export class Stage {
     this.renderer.render(this.scene, this.camera);
   }
 
-  pick(clientX: number, clientY: number): number | null {
-    if (!this.keyboard) return null;
+  pick(clientX: number, clientY: number): Target | null {
+    if (!this.view) return null;
     const rect = this.renderer.domElement.getBoundingClientRect();
     const ndc = new THREE.Vector2(
       ((clientX - rect.left) / rect.width) * 2 - 1,
       -((clientY - rect.top) / rect.height) * 2 + 1,
     );
     this.raycaster.setFromCamera(ndc, this.camera);
-    const hit = this.raycaster.intersectObjects(this.keyboard.faces, false)[0];
-    return hit ? (hit.object.userData['midi'] as number) : null;
+    const hit = this.raycaster.intersectObjects(this.view.faces, false)[0];
+    return hit ? (hit.object.userData as Target) : null;
   }
 
   /** Also fires when only the pixel density changes, as on moving to another screen. */
@@ -72,13 +72,14 @@ export class Stage {
   private fit(): void {
     const w = this.width;
     const h = this.height;
-    if (w === 0 || h === 0 || !this.keyboard) return;
+    const view = this.view;
+    if (w === 0 || h === 0 || !view) return;
     this.renderer.setSize(w, h, false);
     const aspect = w / h;
     const m = KEYS.margin;
-    const wide = this.keyboard.width + 2 * m;
+    const wide = view.width + 2 * m;
     const room = wide / aspect - 2 * m;
-    const length = Math.min(KEYS.maxLength, Math.max(KEYS.minLength, room));
+    const length = Math.min(view.maxLength, Math.max(view.minLength, room));
 
     const viewH = Math.max(wide / aspect, length + 2 * m);
     const viewW = viewH * aspect;
@@ -90,6 +91,6 @@ export class Stage {
     });
     this.camera.updateProjectionMatrix();
 
-    this.keyboard.place(length, { x0: -viewW / 2, z0: -viewH / 2, px: w / viewW, pz: h / viewH });
+    view.place(length, { x0: -viewW / 2, z0: -viewH / 2, px: w / viewW, pz: h / viewH });
   }
 }

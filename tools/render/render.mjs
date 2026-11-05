@@ -1,14 +1,18 @@
-// Renders the synthesised piano to WAV files in var/render/, for tuning by ear.
+// Renders the synthesised piano, and the guitar through each amp sound, to WAV files in
+// var/render/, for tuning by ear.
 //
 //   npm run render                    a phrase, the range, and the full set's render time
 //   npm run render -- C4 [soft|hard]  one note
 //   npm run render -- all             every rendered root at both velocity layers
+//   npm run render -- amp [sound]     a riff dry and through each amp sound (or one), as loud as in the page
 
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { AMP_SOUNDS, AmpModel, ampStages, FLAT } from 'chordlight/audio/amp-model.js';
+import { renderPluck } from 'chordlight/audio/guitar-model.js';
 import { renderNote, rootFor, roots } from 'chordlight/audio/piano-model.js';
-import { PIANO } from 'chordlight/tuning.js';
+import { MIX, PIANO } from 'chordlight/tuning.js';
 
 const RATE = 48000;
 const here = dirname(fileURLToPath(import.meta.url));
@@ -71,8 +75,49 @@ function mix(notes, seconds) {
   return out;
 }
 
+/** A pop-punk riff on the plucked-string voice, at a DI's level: muted chugs, open chords, a line. */
+function riff() {
+  const beat = 60 / 168;
+  const out = new Float32Array(Math.round(RATE * (beat * 16 + 1.5)));
+  const put = (midi, at, length, level) => {
+    const d = renderPluck(midi, RATE);
+    const from = Math.round(at * RATE);
+    const n = Math.round(length * RATE);
+    for (let i = 0; i < n && i < d.length && from + i < out.length; i++) {
+      out[from + i] += d[i] * level * Math.min(1, (n - i) / 240);
+    }
+  };
+  const power = (root) => [root, root + 7, root + 12];
+  for (let i = 0; i < 8; i++) for (const m of power(40)) put(m, (i * beat) / 2, beat * 0.4, 0.28);
+  for (const [k, root] of [43, 45].entries()) {
+    for (const m of power(root)) put(m, beat * (4 + k * 2), beat * 1.9, 0.3);
+  }
+  for (const [k, m] of [64, 67, 69, 71, 69, 67, 64, 62].entries()) {
+    put(m, beat * (8 + k), beat * 0.9, 0.42);
+  }
+  for (const m of power(40)) put(m, beat * 16, 1.4, 0.3);
+  return out;
+}
+
 const arg = process.argv[2];
-if (arg === 'all') {
+if (arg === 'amp') {
+  const only = process.argv[3];
+  if (only && !AMP_SOUNDS.includes(only)) {
+    console.log(`no amp sound ${only}; there are: ${AMP_SOUNDS.join(' ')}`);
+    process.exit(2);
+  }
+  const dry = riff();
+  wav(join(OUT, 'amp-dry.wav'), dry);
+  // The guitar bus, then the master's gain into its clipper: what the page plays.
+  const page = MIX.guitar * MIX.master;
+  for (const sound of only ? [only] : AMP_SOUNDS) {
+    const wet = new AmpModel(RATE, ampStages(sound, FLAT)).process(dry);
+    wav(
+      join(OUT, `amp-${sound}.wav`),
+      wet.map((v) => v * page),
+    );
+  }
+} else if (arg === 'all') {
   for (const root of roots()) {
     for (const layer of [0, 1])
       wav(join(OUT, `root-${root}-${layer ? 'hard' : 'soft'}.wav`), buffer(root, layer));

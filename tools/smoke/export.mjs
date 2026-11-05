@@ -1,6 +1,7 @@
 // Clip export: the JSON file round-trips and refuses what isn't one; the MIDI file reads back with
 // the notes, backing, chord markers and tempo where they should be, on the backing's grid.
 
+import { cutClip, extractClip } from 'chordlight/clips/extract.js';
 import { clipFromJson, clipToJson } from 'chordlight/clips/file.js';
 import { clipToMidi, tempoMap, tickAt } from 'chordlight/clips/midifile.js';
 import { check, done, same } from './kit/check.mjs';
@@ -169,5 +170,48 @@ same(
   'no backing tracks without a backing, and ASCII names',
 );
 same(loose.tracks[1].notes, [[480, 60, 89]], 'loose notes at the loose tempo');
+
+const withGuitar = {
+  ...clip,
+  events: [...clip.events, note(1.5, true, 52, 0.5, 'guitar'), note(2, false, 52, 0, 'guitar')],
+};
+same(
+  clipFromJson(clipToJson(withGuitar), 'g')?.events,
+  withGuitar.events,
+  'guitar notes survive JSON',
+);
+const guitarFile = readMidi(clipToMidi(withGuitar));
+same(
+  guitarFile.tracks.map((t) => t.name),
+  ['Four Chords in C major', 'Played', 'Guitar', 'Backing chords', 'Backing bass'],
+  'guitar notes get a track of their own',
+);
+same(guitarFile.tracks[2].notes, [[1440, 52, 64]], 'the guitar note where it was heard');
+
+// A guitar note that ended almost as it began is left out of a clip; a short piano note isn't, and
+// a guitar note still sounding at the cut is kept.
+{
+  const log = [
+    note(10, true, 64, 0.8, 'guitar'),
+    note(10.6, false, 64, 0, 'guitar'),
+    note(10.6, true, 52, 0.6, 'guitar'),
+    note(10.62, false, 52, 0, 'guitar'),
+    note(10.62, true, 64, 0.6, 'guitar'),
+    note(11, true, 72, 0.7, 'piano'),
+    note(11.01, false, 72, 0, 'piano'),
+    note(11.98, true, 67, 0.7, 'guitar'),
+  ];
+  const heard = (c) => c.events.filter((e) => e.on).map((e) => `${e.voice} ${e.midi}`);
+  same(
+    heard(cutClip(log, 9.9, 12)),
+    ['guitar 64', 'guitar 64', 'piano 72', 'guitar 67'],
+    'a recording drops the guitar slip and keeps the rest',
+  );
+  same(
+    heard(extractClip(log, 12, 10)),
+    ['guitar 64', 'guitar 64', 'piano 72', 'guitar 67'],
+    'and so does a clip',
+  );
+}
 
 done('clips export as JSON and MIDI and read back as they went out');

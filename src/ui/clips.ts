@@ -95,6 +95,7 @@ export function bindClips(app: App): void {
     button.blur();
   });
   app.on('clip', take);
+  app.on('hush', () => shelf.stop());
 
   const backing = $<HTMLInputElement>('#clip-backing');
   onToggle(backing, (on) => {

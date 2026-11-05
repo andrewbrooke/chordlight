@@ -5,7 +5,7 @@
 
 import { MIX } from '../tuning.js';
 
-export type Part = 'piano' | 'backing' | 'bass' | 'click';
+export type Part = 'piano' | 'guitar' | 'backing' | 'bass' | 'click';
 
 export class Engine {
   readonly ctx: AudioContext;
@@ -40,6 +40,7 @@ export class Engine {
     };
     this.buses = {
       piano: bus(MIX.piano, true),
+      guitar: bus(MIX.guitar, true),
       backing: bus(MIX.backing, true),
       bass: bus(MIX.bass, false),
       click: bus(MIX.click, false),

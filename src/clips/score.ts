@@ -20,6 +20,7 @@ import { detect } from '../theory/detect.js';
 import { parseNoteName, pcOfSpelling, type Spelling } from '../theory/pitch.js';
 import { MOODS, type SpelledKey, spellIn, spellKey } from '../theory/scales.js';
 import { NOTATION } from '../tuning.js';
+import type { ClipVoice } from './extract.js';
 import type { Clip } from './file.js';
 import { tempoMap, tickAt, TPQ } from './midifile.js';
 import { realiseBacking } from './realise.js';
@@ -59,7 +60,8 @@ export function scoreOf(clip: Clip): Score | null {
   const snap = (t: number) => Math.round(tick(t) / finest) * finest;
   const key = keyOf(clip);
 
-  const raw = pairs(clip, 'piano');
+  // Played on the keys or heard from a guitar, they are the player's notes either way.
+  const raw = pairs(clip, ['piano', 'guitar']);
   const onsets = snapOnsets(
     raw.map((n) => n.on),
     tick,
@@ -187,18 +189,23 @@ function legato(notes: Snapped[], fill: number, bar: number): Snapped[] {
   });
 }
 
-/** One voice's notes as on and off times, in clip seconds. */
-function pairs(clip: Clip, voice: 'piano' | 'pad'): { midi: number; on: number; off: number }[] {
-  const open = new Map<number, number>();
+/** Some voices' notes as on and off times, in clip seconds. */
+function pairs(
+  clip: Clip,
+  voices: readonly ClipVoice[],
+): { midi: number; on: number; off: number }[] {
+  // Keyed by voice too, so the same note on the keys and the guitar doesn't end the other.
+  const open = new Map<string, { midi: number; on: number }>();
   const out: { midi: number; on: number; off: number }[] = [];
   for (const e of clip.events) {
-    if (e.voice !== voice) continue;
-    const on = open.get(e.midi);
-    if (on !== undefined) out.push({ midi: e.midi, on, off: e.t });
-    if (e.on) open.set(e.midi, e.t);
-    else open.delete(e.midi);
+    if (!voices.includes(e.voice)) continue;
+    const id = `${e.voice}:${e.midi}`;
+    const was = open.get(id);
+    if (was) out.push({ ...was, off: e.t });
+    if (e.on) open.set(id, { midi: e.midi, on: e.t });
+    else open.delete(id);
   }
-  for (const [midi, on] of open) out.push({ midi, on, off: clip.duration });
+  for (const { midi, on } of open.values()) out.push({ midi, on, off: clip.duration });
   return out.sort((a, b) => a.on - b.on);
 }
 
@@ -210,7 +217,7 @@ function chordTicks(clip: Clip, key: SpelledKey, snap: (t: number) => number) {
       name: c.name,
     }));
   }
-  const held = pairs(clip, 'pad');
+  const held = pairs(clip, ['pad']);
   const starts = [...new Set(held.map((n) => n.on))];
   return starts.flatMap((t) => {
     const heard = detect(

@@ -23,7 +23,7 @@ export interface Clip {
 export const CLIP_FORMAT = 'chordlight-clip';
 export const CLIP_VERSION = 1;
 
-const VOICES: readonly ClipVoice[] = ['piano', 'pad'];
+const VOICES: readonly ClipVoice[] = ['piano', 'pad', 'guitar'];
 const STYLES: readonly Style[] = ['pad', 'piano', 'arp', 'drive'];
 
 export function clipToJson(clip: Clip): string {

@@ -609,6 +609,294 @@ body.mode-progression #palette {
   font-size: 15px;
 }
 
+/* Guitar mode */
+
+.badge {
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--wander);
+  border: 1px solid #2c6f66;
+  border-radius: 4px;
+  padding: 0 4px;
+  vertical-align: 1px;
+}
+
+body.instrument-piano #guitar-open,
+body.instrument-guitar #range-row {
+  display: none;
+}
+
+#guitar-open .light {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: var(--line);
+}
+
+#guitar-open.listening .light {
+  background: var(--wander);
+  box-shadow: 0 0 6px var(--wander);
+}
+
+#guitar-status {
+  margin: 8px 0;
+}
+
+#guitar-device-row[hidden],
+#guitar-meter-row[hidden],
+#guitar-record-row[hidden] {
+  display: none;
+}
+
+#guitar-record.recording {
+  border-color: #e5484d;
+  color: #ff7a7a;
+}
+
+.live {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#guitar-heard {
+  min-width: 11em;
+  color: var(--home);
+  font-weight: 600;
+}
+
+.meter {
+  position: relative;
+  flex: 1;
+  min-width: 120px;
+  height: 10px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--bg);
+}
+
+.meter i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0;
+  background: var(--wander);
+  transition: width 60ms linear;
+}
+
+/* Too quiet, good, loud, clipping; the stops are set from the setup's thresholds. */
+.meter.zones {
+  height: 18px;
+  background: linear-gradient(
+    to right,
+    #2a221c 0 var(--good),
+    #24453b var(--good) var(--loud),
+    #4a3320 var(--loud) var(--clip),
+    #6a2424 var(--clip)
+  );
+}
+
+.meter.zones i {
+  background: #efe6d88c;
+}
+
+/* Knobs in the middle are the sound as voiced. */
+.knobs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 14px;
+  margin: 8px 0;
+}
+
+.knobs label {
+  justify-content: space-between;
+}
+
+.knobs input[type='range'] {
+  width: 60%;
+}
+
+.knobs button {
+  justify-self: start;
+}
+
+.strings {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px 10px;
+  margin: 6px 0;
+}
+
+.strings label {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+  font-size: 12px;
+}
+
+/* The guitar setup */
+
+#setup {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: #0d0b09d9;
+  z-index: 8;
+}
+
+#setup[hidden] {
+  display: none;
+}
+
+#setup .card {
+  width: min(520px, calc(100vw - 32px));
+  padding: 18px 24px;
+}
+
+#setup h2 {
+  margin: 2px 0 8px;
+  font-size: 20px;
+}
+
+#setup-text p {
+  margin: 0 0 8px;
+}
+
+#setup-show {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 12px 0;
+}
+
+#setup .channel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--soft);
+}
+
+#setup .channel[hidden] {
+  display: none;
+}
+
+#setup .say {
+  min-height: 2.9em;
+  font-size: 15px;
+}
+
+#setup .say.good {
+  color: var(--wander);
+}
+
+#setup .say.warn {
+  color: var(--land);
+}
+
+.tuner {
+  position: relative;
+  height: 46px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+}
+
+.tuner b {
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  left: calc(50% - 1px);
+  width: 2px;
+  background: var(--soft);
+}
+
+.tuner i {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  width: 4px;
+  margin-left: -2px;
+  border-radius: 2px;
+  background: var(--land);
+  transition: left 80ms linear;
+}
+
+.tuner.in-tune {
+  border-color: var(--wander);
+}
+
+.tuner.in-tune i {
+  background: var(--wander);
+}
+
+.tuner span {
+  position: absolute;
+  bottom: 2px;
+  font-size: 11px;
+  color: var(--soft);
+}
+
+.tuner .flat {
+  left: 8px;
+}
+
+.tuner .sharp {
+  right: 8px;
+}
+
+.beats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.beats i {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--line);
+  border-radius: 50%;
+}
+
+.beats i.play {
+  border-color: var(--land);
+}
+
+.beats i.past {
+  background: var(--soft);
+}
+
+.beats i.play.past {
+  background: var(--land);
+}
+
+.choices {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.choice {
+  padding: 10px 12px;
+  font-size: 15px;
+  text-align: left;
+}
+
+.summary {
+  margin: 0;
+  padding-left: 18px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .meter i,
+  .tuner i {
+    transition: none;
+  }
+}
+
 #start button + button {
   margin-top: 8px;
 }

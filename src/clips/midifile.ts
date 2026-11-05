@@ -8,7 +8,7 @@
 // follow, and the file runs at CLIPS.looseBpm.
 //
 // Tracks: tempo, meter and chord names (as markers); the player's notes; held chords (Key mode);
-// the backing's chords; its bass. Empty ones are left out. Text is ASCII, since MIDI text has no
+// the guitar's notes; the backing's chords; its bass. Empty ones are left out. Text is ASCII, since MIDI text has no
 // declared encoding and programs disagree about anything else.
 
 import type { Planned } from '../audio/plan.js';
@@ -23,14 +23,19 @@ export const TPQ = 480;
 const BAR = 4 * TPQ;
 
 /** General MIDI programs, counted from 0. */
-const PROGRAM = { piano: 0, guitar: 29, bass: 33, pad: 89 };
+const PROGRAM = { piano: 0, cleanGuitar: 27, guitar: 29, bass: 33, pad: 89 };
 const STYLE_PROGRAM: Record<Style, number> = {
   pad: PROGRAM.pad,
   piano: PROGRAM.piano,
   arp: PROGRAM.piano,
   drive: PROGRAM.guitar,
 };
-const VOICE_CHANNEL: Record<ClipVoice, number> = { piano: 0, pad: 1 };
+const VOICE_CHANNEL: Record<ClipVoice, number> = { piano: 0, pad: 1, guitar: 4 };
+const VOICE_PROGRAM: Record<ClipVoice, number> = {
+  piano: PROGRAM.piano,
+  pad: PROGRAM.pad,
+  guitar: PROGRAM.cleanGuitar,
+};
 const CHORDS = 2;
 const BASS = 3;
 
@@ -102,9 +107,9 @@ export function clipToMidi(clip: Clip): Uint8Array<ArrayBuffer> {
   ];
 
   const tracks = [conductor];
-  for (const voice of ['piano', 'pad'] as const) {
+  for (const voice of ['piano', 'pad', 'guitar'] as const) {
     const ch = VOICE_CHANNEL[voice];
-    const events: Event[] = [program(0, ch, voice === 'piano' ? PROGRAM.piano : PROGRAM.pad)];
+    const events: Event[] = [program(0, ch, VOICE_PROGRAM[voice])];
     const opened = new Map<number, number>();
     for (const e of clip.events) {
       if (e.voice !== voice) continue;
@@ -140,7 +145,11 @@ export function clipToMidi(clip: Clip): Uint8Array<ArrayBuffer> {
   return new Uint8Array([...header, ...tracks.flatMap(trackChunk)]);
 }
 
-const TRACK_NAME: Record<ClipVoice, string> = { piano: 'Played', pad: 'Held chords' };
+const TRACK_NAME: Record<ClipVoice, string> = {
+  piano: 'Played',
+  pad: 'Held chords',
+  guitar: 'Guitar',
+};
 
 function planned(notes: readonly Planned[], ch: number, at: (t: number) => number): Event[] {
   return notes.flatMap((p) => {

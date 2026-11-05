@@ -28,8 +28,13 @@ each note is lit the way it is.
   with the backing on its own tracks and the chord names as markers, or as sheet music (PDF): what
   you played snapped to written note lengths on the backing's beat, on a grand staff in the key,
   with the chord names above.
+- **Guitar mode (experimental):** a guitar neck in place of the keyboard, lit the same way, in
+  standard or any other tuning. Plug a guitar into an audio interface and Chordlight hears what
+  you play, lights it on the neck, can play it through a built-in amp, and records it into clips
+  and MIDI files like anything else. See [Guitar mode](#guitar-mode).
 - **Synthesised piano:** no samples to download. All sound is generated in the browser.
-- **Input:** computer keyboard, mouse or touch, and MIDI keyboards.
+- **Input:** computer keyboard, mouse or touch, MIDI keyboards, and a guitar through an audio
+  interface.
 - **A first-visit tour** of the basics, finished mostly by playing. Skip it from the start screen
   or at any step with `Esc`, and replay it from Settings.
 
@@ -37,6 +42,8 @@ each note is lit the way it is.
 
 - Node.js 20.11 or newer.
 - A current desktop browser. For a MIDI keyboard, Chrome or Edge is the smoothest option.
+- For guitar input, an audio interface with an instrument input (a Focusrite Scarlett, say), and
+  permission for the page to use the microphone, which is how browsers reach audio inputs.
 
 ## Running it
 
@@ -61,6 +68,39 @@ different port.
 | `Enter`                 | keep a clip                                                                 |
 
 A piano-shaped layout (letters are white keys) and two chromatic rows are available in Settings.
+
+## Guitar mode
+
+Switch the top bar from Piano to Guitar for a neck instead of a keyboard. Every place on the neck
+whose note is lit gets a dot, so a key's scale shapes show across all the frets. Clicking a fret, the
+computer keys and a MIDI keyboard all play a plucked string through the amp. The tuning is set in the
+Guitar panel: standard, half or whole step down, drop D or C, DADGAD, open G or D, or six strings of
+your own.
+
+The amp has four sounds: **Clean**, **Crunch** (an amp just breaking up), **Punk** (tight and
+saturated, mids forward) and **Fuzz** (thick, scooped, endless sustain), each with Drive, Bass, Mid
+and Treble. The knobs start in the middle, where the sound is as voiced; picking a sound puts them
+back there.
+
+**Guitar input** in the top bar opens the panel. The first time, **Plug in my guitar** walks
+through a setup: it finds the input your guitar is on, checks the level, listens to the quiet to
+set a noise gate and filter out mains hum, tunes each string, and times you playing along to a
+click so recordings line up with the beat. It's kept for each interface, and **Set up** runs it
+again.
+
+It's experimental, and the limits are real ones:
+
+- **One note at a time.** Single notes, riffs and melodies are heard, lit and recorded. Strummed
+  chords aren't yet.
+- **The place on the neck is a guess.** Most notes can be played on two or more strings, and one
+  pickup can't tell which. Chordlight lights the one nearest where your hand has been playing.
+- **Playing through the amp can lag.** A browser adds delay between the input and the output, more
+  on Windows than elsewhere. If it feels late, untick **hear my guitar through Chordlight** and use
+  your interface's direct monitoring instead; Chordlight still hears and lights what you play.
+
+If it hears notes you didn't play, or misses ones you did, **Record input** in the Guitar panel saves
+what it heard as a WAV file, with its setup and the notes it heard inside. Send that with what you
+played: `npm run hear -- <file.wav> --expect "E4 F#4 G#4"` replays it through the detector.
 
 ## The lights
 
@@ -96,7 +136,8 @@ npm run dev            # build, then serve
 npm run watch          # rebuild on save
 npm run check          # type-check only
 npm run smoke          # build, then run the tests in tools/smoke/
-npm run render         # render piano notes to WAV in var/render/
+npm run render         # render piano notes to WAV in var/render/ (-- amp: a riff through each amp sound)
+npm run hear -- <wav>  # replay a guitar input recording through the detector (--expect "E4 F#4", --notes)
 npm run site           # assemble the static site in site/
 npm run format         # format with Prettier
 ```
