@@ -18,7 +18,7 @@ export function bindLane(app: App): void {
       for (let b = 0; b < step.beats; b++) dots.append(el('i'));
       const card = el('button', { className: `card job-${job}` }, [
         el('span', { className: 'numeral', text: numeralLabel(step.chord, app.key) }),
-        el('span', { className: 'name', text: chordName(step.chord) }),
+        el('span', { className: 'name', text: chordName(step.chord) + lifted(step.lift) }),
         el('span', { className: 'tag' }),
         dots,
       ]);
@@ -65,6 +65,11 @@ export function bindLane(app: App): void {
   app.on('frame', update);
   build();
   bindEditor(app);
+}
+
+/** A voicing raised or lowered with ^ or _, as arrows after the chord's name. */
+function lifted(lift = 0): string {
+  return lift === 0 ? '' : ` ${(lift > 0 ? '↑' : '↓').repeat(Math.abs(lift))}`;
 }
 
 /** Scrolls a row that doesn't wrap (on a small screen) to show `card`, with the one after it. */

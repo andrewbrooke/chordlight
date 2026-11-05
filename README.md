@@ -16,8 +16,11 @@ each note is lit the way it is.
   Phrygian). Hold any of the key's seven chords from the palette or with `Z`–`M`.
 - **Progression mode:** 17 preset progressions, including Four Chords, the 12-bar blues, ii–V–I
   and the Andalusian cadence, or type your own as Roman numerals (`I V vi IV`) or chord names
-  (`C G Am F`). Backing styles are pad, piano, arpeggio and drive, with optional bass, click and
-  count-in. The next chord's notes are marked just before it arrives.
+  (`C G Am F`), where `:2` makes a chord last two beats and `^` or `_` voices it an inversion
+  higher or lower. Backing styles are pad, piano, arpeggio and drive, with optional bass, click
+  and count-in. The next chord's notes are marked just before it arrives.
+- **The editor:** hear any chord before adding it, from the key's own chords, borrowed ones, any
+  root and type, or the chords that sound good after your last one, each with the reason why.
 - **Borrowed chords:** when a chord comes from outside the key, the lit scale changes with it.
 - **Chord recognition:** whatever you hold is named, with its Roman numeral in the current key.
 - **Clips:** keep the last 10 to 60 seconds of playing, along with the backing that was
@@ -128,6 +131,9 @@ played: `npm run hear -- <file.wav> --expect "E4 F#4 G#4"` replays it through th
   note clashes with it, so it works best on the way somewhere else.
 - **Progressions are written as Roman numerals** counted from home, so I–V–vi–IV is C G Am F in C
   major and the same progression in any other key.
+- **The band moves each chord as little as it can.** The first chord starts in root position, and
+  every chord after keeps its notes close to the one before, so the same chord can be stacked
+  differently in different places. That smoothness is what voice leading means.
 - **Borrowed chords change the lights.** When a chord comes from outside the key, like the E major
   in C major's version of Creep (C E F Fm), the lights switch to the major, harmonic minor or
   melodic minor scale that fits it while keeping as much of the key as possible.

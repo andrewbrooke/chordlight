@@ -2,9 +2,8 @@
 // them, shown in the bar under the boxes beside the only button that adds. A chip click only plays.
 
 import type { App } from '../app.js';
-import { type Chord, chordName, chordSpellings } from '../theory/chords.js';
+import { type Chord, chordName, voicedNames } from '../theory/chords.js';
 import { jobOf } from '../theory/diatonic.js';
-import { nameOf } from '../theory/pitch.js';
 import { numeralLabel, numeralText } from '../theory/roman.js';
 import type { SpelledKey } from '../theory/scales.js';
 import { el } from './dom.js';
@@ -25,10 +24,14 @@ export function chordChip(
   return b;
 }
 
-/** A chord picked in one of the boxes; `from` when it was heard as the change from that chord. */
+/**
+ * A chord picked in one of the boxes, with the notes it was voiced on as it would be added; `from`
+ * when it was heard as the change from that chord.
+ */
 export interface Pick {
   box: string;
   chord: Chord;
+  notes: number[];
   words: string;
   from?: Chord | undefined;
 }
@@ -87,7 +90,7 @@ export class Picks {
       ...(p.from ? [el('span', { className: 'from', text: `${chordName(p.from)} →` })] : []),
       el('span', { className: 'big', text: chordName(p.chord) }),
       el('span', { className: 'numeral', text: numeralLabel(p.chord, key) }),
-      el('span', { className: 'notes', text: chordSpellings(p.chord).map(nameOf).join(' ') }),
+      el('span', { className: 'notes', text: voicedNames(p.chord, p.notes).join(' ') }),
       el('span', { className: 'words', text: p.words }),
       el('span', { className: 'spacer' }),
       adder,

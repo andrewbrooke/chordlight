@@ -1,9 +1,15 @@
-// Chord voicings that move as little as possible from the previous chord. Chords of five notes
-// drop the fifth.
+// Chord voicings inside a range. A chord with nothing before it takes a standard shape: root
+// position, its root in the range's lowest octave, or the inversion nearest that when it won't fit.
+// Every chord after moves as little as it can from the one before, so the same chord can come out
+// stacked differently in different places; `lift` (a progression's ^ and _) overrides one.
+// Chords of five notes drop the fifth.
 //
 // The candidates are each inversion of the chord as it stacks (root, third, fifth, seventh, ninth)
 // and in close position. A ninth stacks past the octave, so on a high root every stacked inversion
 // overruns the range; the close ones span under an octave, so one always fits.
+//
+// Nothing before used to mean "nearest the middle of the range", which put Gmaj7 alone as
+// F♯3 G3 B3 D4: a shape nobody would pick, and the same chord sounding higher after Am.
 
 import { type Chord, chordPcs, qualityOf, rootPc } from '../theory/chords.js';
 import { pcOf, pcOfSpelling } from '../theory/pitch.js';
@@ -21,7 +27,9 @@ export function voice(
   for (const order of [...rotations(pcs), ...rotations(close)]) {
     const notes = stack(order, lo);
     if (notes[notes.length - 1]! > hi) continue;
-    const cost = prev?.length ? movement(notes, prev) : Math.abs(mean(notes) - (lo + hi) / 2);
+    // Root position comes first, then each inversion in turn.
+    if (!prev?.length) return notes;
+    const cost = movement(notes, prev);
     if (cost < bestCost) {
       bestCost = cost;
       best = notes;
@@ -53,10 +61,6 @@ function stack(order: readonly number[], lo: number): number[] {
   return notes;
 }
 
-function mean(xs: readonly number[]): number {
-  return xs.reduce((a, b) => a + b, 0) / xs.length;
-}
-
 /** Distance from each note to the nearest note of the other chord, summed both ways. */
 function movement(a: readonly number[], b: readonly number[]): number {
   const near = (x: number, ys: readonly number[]) => Math.min(...ys.map((y) => Math.abs(x - y)));
@@ -64,9 +68,23 @@ function movement(a: readonly number[], b: readonly number[]): number {
 }
 
 /** A progression's voicings, each led on from the one before, as the band plays them. */
-export function voiceChain(chords: readonly Chord[], lo: number, hi: number): number[][] {
+export function voiceChain(
+  steps: readonly { chord: Chord; lift?: number | undefined }[],
+  lo: number,
+  hi: number,
+): number[][] {
   const out: number[][] = [];
-  for (const chord of chords) out.push(voice(chord, out.at(-1) ?? null, lo, hi));
+  for (const s of steps) out.push(invert(voice(s.chord, out.at(-1) ?? null, lo, hi), s.lift ?? 0));
+  return out;
+}
+
+/** Up an inversion per step of `lift` (the lowest note up an octave), or down (the highest down). */
+export function invert(notes: readonly number[], lift: number): number[] {
+  // Sorted after every move: a ninth spans more than an octave, so the moved note can land inside.
+  let out = [...notes];
+  const up = (xs: number[]) => [...xs.slice(1), xs[0]! + 12].sort((a, b) => a - b);
+  const down = (xs: number[]) => [xs.at(-1)! - 12, ...xs.slice(0, -1)].sort((a, b) => a - b);
+  for (let i = 0; i < Math.abs(lift); i++) out = lift > 0 ? up(out) : down(out);
   return out;
 }
 

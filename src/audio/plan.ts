@@ -26,8 +26,7 @@ export class BackingPlan {
 
   setSteps(steps: readonly Step[]): void {
     this.steps = [...steps];
-    const chords = steps.map((s) => s.chord);
-    this.voicings = voiceChain(chords, BACKING.chordLo, BACKING.chordHi);
+    this.voicings = voiceChain(steps, BACKING.chordLo, BACKING.chordHi);
   }
 
   /** `eighth` counts from the loop's start. */

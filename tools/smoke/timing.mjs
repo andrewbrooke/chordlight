@@ -5,10 +5,10 @@ import { cutClip, extractClip } from 'chordlight/clips/extract.js';
 import { beatAt, positionAt, timelineOf, timeOfBeat } from 'chordlight/audio/timeline.js';
 import { Transport } from 'chordlight/audio/transport.js';
 import { BackingPlan } from 'chordlight/audio/plan.js';
-import { voice, voiceChain } from 'chordlight/audio/voicing.js';
+import { invert, voice, voiceChain } from 'chordlight/audio/voicing.js';
 import { QUALITIES, chordHas } from 'chordlight/theory/chords.js';
 import { spellOnLetter } from 'chordlight/theory/pitch.js';
-import { parseProgression } from 'chordlight/theory/roman.js';
+import { parseProgression, parseRoman } from 'chordlight/theory/roman.js';
 import { spellKey } from 'chordlight/theory/scales.js';
 import { BACKING } from 'chordlight/tuning.js';
 import { check, done, same } from './kit/check.mjs';
@@ -79,16 +79,50 @@ for (const [home, text] of [
   }
 }
 
+// A chord with nothing before it takes the standard shape: root position from the bottom octave
+// of the range, or the nearest inversion that fits. Gmaj7 alone was once F♯3 G3 B3 D4.
+{
+  const G = spellKey({ home: 7, mood: 'major' });
+  const alone = (t, k = G) => voice(parseRoman(t, k).chord, null, BACKING.chordLo, BACKING.chordHi);
+  same(alone('Imaj7'), [55, 59, 62, 66], 'Gmaj7 alone: G3 B3 D4 F♯4');
+  same(alone('I', spellKey({ home: 0, mood: 'major' })), [48, 52, 55], 'C alone: C3 E3 G3');
+  same(alone('IIImaj7'), [51, 54, 58, 59], 'Bmaj7 is too tall upright: its first inversion');
+  same(alone('Imaj9'), [55, 57, 59, 66], 'Gmaj9 alone: root at the bottom, close');
+}
+
+// ^ and _ move one inversion each, and the chords after lead on from the moved one.
+same(invert([55, 59, 62, 66], 1), [59, 62, 66, 67], 'up an inversion');
+same(invert([55, 59, 62, 66], -2), [50, 54, 55, 59], 'down two');
+same(invert([50, 54, 61, 64], 1), [54, 61, 62, 64], 'a ninth moved up stays in order');
+{
+  const key = spellKey({ home: 7, mood: 'major' });
+  const plain = voiceChain(parseProgression('I IV', key).steps, BACKING.chordLo, BACKING.chordHi);
+  const raised = voiceChain(parseProgression('I^ IV', key).steps, BACKING.chordLo, BACKING.chordHi);
+  same(raised[0], invert(plain[0], 1), 'the lifted chord');
+  same(
+    raised[1],
+    voice(parseRoman('IV', key).chord, raised[0], BACKING.chordLo, BACKING.chordHi),
+    'the next one leads on from it',
+  );
+  const plan = new BackingPlan();
+  plan.style = 'pad';
+  plan.bassOn = false;
+  plan.setSteps(parseProgression('I^ IV', key).steps);
+  const pos = { step: 0, next: 1, beatInStep: 0, beatsLeft: 4, countIn: false };
+  same(plan.at(0, pos, 0, 0.5)[0].notes, raised[0], 'the band plays the lift');
+}
+
 // The editor previews a chord as voiceChain would put it on the end, and the band must play exactly
 // that: once on the end it is voiced the same, and adding it re-voices nothing before it.
 {
   const key = spellKey({ home: 0, mood: 'major' });
-  const chords = parseProgression('I iii vi IVmaj7 ii9 V7sus4', key).steps.map((s) => s.chord);
+  const steps = parseProgression('I iii vi IVmaj7 ii9 V7sus4', key).steps;
+  const chords = steps.map((s) => s.chord);
   const lo = BACKING.chordLo;
   const hi = BACKING.chordHi;
   for (let n = 1; n < chords.length; n++) {
-    const before = voiceChain(chords.slice(0, n), lo, hi);
-    const after = voiceChain(chords.slice(0, n + 1), lo, hi);
+    const before = voiceChain(steps.slice(0, n), lo, hi);
+    const after = voiceChain(steps.slice(0, n + 1), lo, hi);
     same(after.slice(0, n), before, `adding chord ${n + 1} re-voices nothing before it`);
     same(after[n], voice(chords[n], before.at(-1), lo, hi), `chord ${n + 1} sounds as previewed`);
   }
@@ -97,7 +131,7 @@ for (const [home, text] of [
     plan.style = style;
     plan.bassOn = false;
     plan.setSteps(chords.map((chord) => ({ chord, beats: 4 })));
-    const chain = voiceChain(chords, lo, hi);
+    const chain = voiceChain(steps, lo, hi);
     chords.forEach((_, step) => {
       const pos = { step, next: 0, beatInStep: 0, beatsLeft: 4, countIn: false };
       same(plan.at(0, pos, 0, 0.5)[0].notes, chain[step], `${style}: the band plays the chain`);

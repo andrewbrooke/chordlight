@@ -107,6 +107,17 @@ export function chordHas(c: Chord): boolean[] {
   return Array.from({ length: 12 }, (_, pc) => pcs.includes(pc));
 }
 
+/** Voiced notes named with their octaves, spelled as the chord spells them: G3 B3 D4 F♯4. */
+export function voicedNames(c: Chord, notes: readonly number[]): string[] {
+  const pcs = chordPcs(c);
+  const names = chordSpellings(c);
+  return notes.map((m) => {
+    const s = names[pcs.indexOf(pcOf(m))]!;
+    // By letter, so B♯3 is the C4 key and C♭4 the B3 one.
+    return nameOf(s) + (Math.floor((m - s.acc) / 12) - 1);
+  });
+}
+
 /** Spelled by letter from the root; a double-accidental root is respelled first (B𝄫 → A C♯ E). */
 export function chordSpellings(c: Chord): Spelling[] {
   const root = simplify(c.root);

@@ -98,8 +98,8 @@ function bindKeyBox(app: App, picks: Picks): void {
     const borrowed = borrowedChords(key).filter((c) => jobOf(c, key) === 'borrowed');
     const chip = (chord: Chord) =>
       chordChip(chord, key, picks.is('key', chord), () => {
-        app.tryChord(chord);
-        picks.pick({ box: 'key', chord, words: qualityOf(chord.quality).words });
+        const notes = app.tryChord(chord);
+        picks.pick({ box: 'key', chord, notes, words: qualityOf(chord.quality).words });
       });
     title.textContent = `From ${key.name}`;
     host.replaceChildren(

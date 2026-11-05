@@ -78,13 +78,13 @@ type Event =
   | 'guitar'
   | 'hush';
 
-/** A key press shown at a booked time: the live backing's, or a clip's during playback. */
+/** A key press shown at a booked time: the live backing's, a clip's, or a chord being tried. */
 interface Timed {
   midi: number;
   start: number;
   end: number;
   ghost: boolean;
-  owner: 'live' | 'clip';
+  owner: 'live' | 'clip' | 'preview';
   on: boolean;
 }
 
@@ -354,11 +354,7 @@ export class App {
   private reparse(): void {
     const parsed = parseProgression(this.s.text, this.key);
     this.steps = parsed.ok ? parsed.steps : [];
-    this.voicings = voiceChain(
-      this.steps.map((s) => s.chord),
-      BACKING.chordLo,
-      BACKING.chordHi,
-    );
+    this.voicings = voiceChain(this.steps, BACKING.chordLo, BACKING.chordHi);
     this.trying = null;
     this.selected = Math.min(this.selected, Math.max(0, this.steps.length - 1));
     if (this.audio) {
@@ -546,31 +542,47 @@ export class App {
 
   /**
    * Plays a chord without adding it, even over the band, voiced as it would be on the end of the
-   * progression, so Add never changes how it sounds.
+   * progression, so Add never changes how it sounds. Returns the notes it voiced.
    */
-  tryChord(chord: Chord | null): void {
+  tryChord(chord: Chord | null): number[] {
     this.trying = chord;
-    if (chord) this.sound([this.voiceLast(chord)]);
+    if (!chord) return [];
+    const notes = this.voiceLast(chord);
+    this.sound([notes]);
+    return notes;
   }
 
   /** Plays the progression's last chord and then `chord` after it, as the band would. */
-  tryNext(chord: Chord): void {
+  tryNext(chord: Chord): number[] {
     this.trying = chord;
     const last = this.voicings.at(-1);
-    this.sound(last ? [last, this.voiceLast(chord)] : [this.voiceLast(chord)]);
+    const notes = this.voiceLast(chord);
+    this.sound(last ? [last, notes] : [notes]);
+    return notes;
   }
 
   private voiceLast(chord: Chord): number[] {
     return voice(chord, this.voicings.at(-1) ?? null, BACKING.chordLo, BACKING.chordHi);
   }
 
+  /** Plays voicings one after another, marking each one's keys while it sounds. */
   private sound(chords: readonly number[][]): void {
     const { engine } = this.startAudio();
     this.stopPreview();
     let t = engine.now;
     chords.forEach((notes, i) => {
       const length = i < chords.length - 1 ? BACKING.previewLead : BACKING.preview;
-      for (const m of notes) this.preview.push(pad(engine, m, t, BACKING.padLevel, t + length));
+      for (const m of notes) {
+        this.preview.push(pad(engine, m, t, BACKING.padLevel, t + length));
+        this.timed.push({
+          midi: m,
+          start: t,
+          end: t + length,
+          ghost: true,
+          owner: 'preview',
+          on: false,
+        });
+      }
       t += length;
     });
   }
@@ -579,6 +591,7 @@ export class App {
     const now = this.audio?.engine.now ?? 0;
     for (const h of this.preview) h.stop(now, BACKING.swapCut);
     this.preview = [];
+    this.clearPresses('preview');
   }
 
   /** Z–M hold the key's chords I–vii° while pressed (Key mode only). */

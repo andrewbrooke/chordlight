@@ -1,6 +1,6 @@
 // Key spelling, chord recognition, numeral round-trips, borrowed-chord scales, and the lights.
 
-import { chordName, chordPcs, QUALITIES, rootPc } from 'chordlight/theory/chords.js';
+import { chordName, chordPcs, QUALITIES, rootPc, voicedNames } from 'chordlight/theory/chords.js';
 import { detect } from 'chordlight/theory/detect.js';
 import { diatonicChords, diatonicSevenths } from 'chordlight/theory/diatonic.js';
 import { fitScale } from 'chordlight/theory/fit.js';
@@ -13,6 +13,7 @@ import {
   parseRoman,
   progressionText,
   ROOT_NUMERALS,
+  transpose,
 } from 'chordlight/theory/roman.js';
 import { MOODS, spellKey } from 'chordlight/theory/scales.js';
 import { check, done, same } from './kit/check.mjs';
@@ -188,6 +189,51 @@ for (const mood of MOODS) {
     }
   }
 }
+
+// Voicing marks: ^ and _ count up and down, sit before the beats, survive printing and transposing.
+const lifted = parseProgression('Imaj7^:2 V/vi_ Cmaj7^^ ii^_ vi_____', C);
+same(
+  lifted.ok && lifted.steps.map((s) => [s.lift ?? 0, s.beats]),
+  [
+    [1, 2],
+    [-1, 4],
+    [2, 4],
+    [0, 4],
+    [-4, 4],
+  ],
+  'lifts and beats read',
+);
+same(
+  lifted.ok && progressionText(lifted.steps, C),
+  'Imaj7^:2 III_ Imaj7^^ ii vi____',
+  'lifts print',
+);
+same(
+  lifted.ok && progressionText(transpose(lifted.steps, C, D), D),
+  'Imaj7^:2 III_ Imaj7^^ ii vi____',
+  'lifts transpose',
+);
+same(parseProgression('I^x', C), { ok: false, token: 'I^x' }, 'nothing after the marks but beats');
+same(
+  voicedNames(parseRoman('I', spellKey({ home: 1, mood: 'major' })).chord, [61, 65, 68]).join(' '),
+  'D♭4 F4 A♭4',
+  'voiced names carry octaves',
+);
+same(
+  voicedNames({ root: { letter: 1, acc: 0 }, quality: 'aug' }, [50, 54, 58]).join(' '),
+  'D3 F♯3 A♯3',
+  'sharps by letter',
+);
+same(
+  voicedNames({ root: { letter: 4, acc: 0 }, quality: '7' }, [55, 59, 62, 65]).join(' '),
+  'G3 B3 D4 F4',
+  'a seventh',
+);
+same(
+  voicedNames({ root: { letter: 4, acc: 1 }, quality: 'maj' }, [56, 60, 63]).join(' '),
+  'G♯3 B♯3 D♯4',
+  'B♯ belongs to the octave below its key',
+);
 
 const secondary = parseRoman('V/vi', C);
 same(secondary && chordName(secondary.chord), 'E', 'V/vi in C');

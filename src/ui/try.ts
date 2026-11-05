@@ -28,8 +28,8 @@ export function bindTry(app: App, picks: Picks): void {
     root = r;
     quality = q;
     const chord = chordAt(r, q);
-    app.tryChord(chord);
-    picks.pick({ box: 'try', chord, words: qualityOf(q).words });
+    const notes = app.tryChord(chord);
+    picks.pick({ box: 'try', chord, notes, words: qualityOf(q).words });
   };
 
   const toggle = (className: string, label: (Node | string)[], on: boolean, fn: () => void) => {

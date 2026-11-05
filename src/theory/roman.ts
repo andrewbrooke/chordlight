@@ -2,7 +2,8 @@
 //
 // Numerals count on the major scale of home, with ♭ and ♯ marking altered roots (the pop
 // convention), so ♭VII is the same chord in C major and C minor. Case sets the triad quality,
-// `V/vi` is a secondary dominant, and `:n` sets the length in beats.
+// `V/vi` is a secondary dominant, `^` or `_` voices the chord an inversion higher or lower (each
+// one more), and `:n` sets the length in beats: `Imaj7^:2`.
 
 import { type Chord, type QualityId, rootPc, thirdOf } from './chords.js';
 import {
@@ -18,7 +19,12 @@ import { DEGREE_LABELS, MAJOR, type SpelledKey } from './scales.js';
 export interface Step {
   chord: Chord;
   beats: number;
+  /** Inversions up (or down, if negative) from where the band would voice it. */
+  lift?: number | undefined;
 }
+
+/** Further than this and a chord leaves the keyboard's middle altogether. */
+const MOST_LIFT = 4;
 
 const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
 
@@ -27,7 +33,9 @@ export const ROOT_NUMERALS = DEGREE_LABELS.map((d) =>
   d.replace(/\d/, (n) => ROMAN[Number(n) - 1]!),
 );
 const NUMERAL = '(VII|VI|IV|V|III|II|I|vii|vi|iv|v|iii|ii|i)';
-const TOKEN = new RegExp(`^([b#♭♯]?)${NUMERAL}([^/:]*)(?:/([b#♭♯]?)${NUMERAL})?(?::(\\d+))?$`);
+const TOKEN = new RegExp(
+  `^([b#♭♯]?)${NUMERAL}([^/:^_]*)(?:/([b#♭♯]?)${NUMERAL})?([\\^_]*)(?::(\\d+))?$`,
+);
 
 const UPPER: Record<string, QualityId> = {
   '': 'maj',
@@ -84,15 +92,16 @@ function degreeRoot(from: Spelling, acc: string | undefined, numeral: string): S
 export function parseRoman(token: string, key: SpelledKey): Step | null {
   const m = TOKEN.exec(token);
   if (!m) return null;
-  const [, acc, numeral, rawSuffix, targetAcc, target, beats] = m;
+  const [, acc, numeral, rawSuffix, targetAcc, target, lift, beats] = m;
   const lower = numeral === numeral!.toLowerCase();
   const quality = (lower ? LOWER : UPPER)[normalSuffix(rawSuffix!)];
   if (!quality) return null;
   const from = target ? degreeRoot(key.home, targetAcc, target) : key.home;
-  return { chord: { root: degreeRoot(from, acc, numeral!), quality }, beats: beatsOf(beats) };
+  const chord = { root: degreeRoot(from, acc, numeral!), quality };
+  return withLift({ chord, beats: beatsOf(beats) }, lift);
 }
 
-const NAME = /^([A-G][#b♯♭]?)([^/:]*)(?:\/([A-G][#b♯♭]?))?(?::(\d+))?$/;
+const NAME = /^([A-G][#b♯♭]?)([^/:^_]*)(?:\/([A-G][#b♯♭]?))?([\^_]*)(?::(\d+))?$/;
 
 const NAMED: Record<string, QualityId> = {
   '': 'maj',
@@ -142,7 +151,18 @@ export function parseName(token: string): Step | null {
   const quality = NAMED[suffix];
   if (!root || !quality) return null;
   const bass = m[3] ? (parseNoteName(m[3]) ?? undefined) : undefined;
-  return { chord: { root, quality, bass }, beats: beatsOf(m[4]) };
+  return withLift({ chord: { root, quality, bass }, beats: beatsOf(m[5]) }, m[4]);
+}
+
+function withLift(step: Step, marks = ''): Step {
+  const n = [...marks].reduce((sum, c) => sum + (c === '^' ? 1 : -1), 0);
+  const lift = Math.max(-MOST_LIFT, Math.min(MOST_LIFT, n));
+  return lift === 0 ? step : { ...step, lift };
+}
+
+/** The marks for a lift: `^^`, `_`. */
+export function liftText(lift = 0): string {
+  return (lift > 0 ? '^' : '_').repeat(Math.abs(lift));
 }
 
 function beatsOf(text: string | undefined): number {
@@ -214,7 +234,7 @@ export function numeralLabel(c: Chord, key: SpelledKey): string {
 }
 
 export function stepText(s: Step, key: SpelledKey): string {
-  const n = numeralText(s.chord, key);
+  const n = numeralText(s.chord, key) + liftText(s.lift);
   return s.beats === 4 ? n : `${n}:${s.beats}`;
 }
 
