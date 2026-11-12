@@ -9,7 +9,9 @@
 import { Amp } from './audio/amp.js';
 import { ampSettings } from './audio/amp-model.js';
 import { Backing } from './audio/backing.js';
+import { Effects } from './audio/effects.js';
 import { Engine } from './audio/engine.js';
+import { fxSettings } from './audio/fx-model.js';
 import { GuitarVoice } from './audio/guitar.js';
 import { Piano } from './audio/piano.js';
 import { type Held, pad } from './audio/synths.js';
@@ -49,6 +51,7 @@ import { Stage } from './view/stage.js';
 
 export interface Audio {
   engine: Engine;
+  effects: Effects;
   piano: Piano;
   amp: Amp;
   guitar: GuitarVoice;
@@ -137,6 +140,7 @@ export class App {
   constructor(stageHost: HTMLElement) {
     this.s.levels = { ...DEFAULTS.levels, ...this.s.levels };
     this.s.amp = ampSettings(this.s.amp);
+    this.s.fx = fxSettings(this.s.fx);
     if (!isTuning(this.s.tuning)) this.s.tuning = [...DEFAULTS.tuning];
     if (this.s.instrument !== 'guitar') this.s.instrument = 'piano';
     // A first visit from a touch screen: key caps are noise with no computer keys to play them, and
@@ -209,7 +213,8 @@ export class App {
       return this.audio;
     }
     const engine = new Engine();
-    const piano = new Piano(engine);
+    const effects = new Effects(engine, engine.buses.piano);
+    const piano = new Piano(engine, effects.input);
     const amp = new Amp(engine);
     const guitar = new GuitarVoice(engine, amp.voice);
     const backing = new Backing(engine, piano);
@@ -226,7 +231,7 @@ export class App {
     engine.ctx.onstatechange = () => this.emit('audio');
     transport.onStop = () => this.emit('settings');
     transport.onChange = () => this.recordBacking();
-    this.audio = { engine, piano, amp, guitar, backing, transport };
+    this.audio = { engine, effects, piano, amp, guitar, backing, transport };
     this.applyAudioSettings();
     backing.setSteps(this.steps);
     transport.setBeats(this.steps.map((s) => s.beats));
@@ -291,10 +296,13 @@ export class App {
     a.transport.clickOn = this.s.click;
     a.backing.style = this.s.style;
     a.backing.bassOn = this.s.bass;
+    const levels = this.s.levels;
     for (const part of ['piano', 'guitar', 'backing', 'bass', 'click'] as const) {
-      a.engine.setLevel(part, this.s.levels[part]);
+      const band = part === 'backing' || part === 'bass' ? levels.band : 1;
+      a.engine.setLevel(part, levels[part] * band);
     }
     a.amp.set(this.s.amp);
+    a.effects.set(this.s.fx, this.s.bpm);
   }
 
   loadPreset(id: string): void {

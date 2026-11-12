@@ -296,6 +296,9 @@ export const MIX = {
   backing: 0.5,
   bass: 0.55,
   click: 0.35,
+  /** The Backing dial beside Play, over the chords and the bass together, and how far up it goes. */
+  band: 1,
+  bandMost: 1.5,
   /** Room tail length and decay in seconds, and wet level. */
   roomLength: 2.2,
   roomDecay: 0.42,
@@ -305,6 +308,68 @@ export const MIX = {
   /** The clipper is linear below this level. */
   clipKnee: 0.7,
 };
+
+/** The piano's effects (audio/effects.ts, audio/fx-model.ts). `[min, max]` is a slider's span. */
+export const FX = {
+  /** Time constant for every setting change, in seconds: quick, but never a click. */
+  glide: 0.03,
+  eq: {
+    /** Each band moves this far either way, in dB. */
+    range: 12,
+    lowHz: 150,
+    highHz: 5000,
+    midHz: [200, 5000],
+    midQ: 1,
+    /** The cuts are off at their outer end. */
+    lowCut: [20, 1000],
+    highCut: [400, 20000],
+    /** One biquad for a gentle slope (12 dB/octave); two Butterworth stages for steep (24). */
+    gentleQ: [Math.SQRT1_2],
+    steepQ: [0.5412, 1.3066],
+  },
+  drive: {
+    /** dB into the curve at no and full amount. */
+    from: -6,
+    to: 24,
+    /** The curve's offset, for even harmonics, and the input span it covers. */
+    asymmetry: 0.3,
+    span: 6,
+    /** Held equally loud at any drive: about a chord's RMS from the computer keys. Driven hard,
+     *  softer playing comes up and harder goes down, as a driven amp squashes it. */
+    reference: 0.11,
+    /** Takes the fizz off the top and the offset's DC off the bottom, in Hz. */
+    smooth: 9000,
+    block: 15,
+  },
+  chorus: {
+    rate: [0.1, 5],
+    /** Centre delay, and how far full depth sweeps either side of it, in seconds. */
+    delay: 0.012,
+    depth: 0.0035,
+  },
+  tremolo: { rate: [0.5, 12] },
+  echo: {
+    /** Free time in ms; DelayNodes are made this long, in seconds, so a half note at 40 BPM fits. */
+    ms: [60, 1200],
+    longest: 3,
+    /** Feedback at full repeats: below 1, so echoes always die away. */
+    feedback: 0.85,
+    /** The lowpass every repeat goes through, dark to bright, in Hz. */
+    tone: [800, 12000],
+  },
+  reverb: {
+    /** Seconds to fall 60 dB. */
+    size: [0.3, 8],
+    preDelay: [0, 120],
+    /** The tail's lowpass at its start and as it fades, at dark and bright tone, in Hz. */
+    startHz: [2500, 15000],
+    endHz: [300, 6000],
+    /** How long the tail takes to build up at the smallest and largest size, in seconds. */
+    onset: [0.008, 0.07],
+    /** Seconds after the last change before a new impulse is made, while a slider is dragged. */
+    settle: 0.15,
+  },
+} as const;
 
 export const PLAY = {
   /** Velocity for computer keys and the mouse. */

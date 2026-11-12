@@ -12,6 +12,11 @@ export class Engine {
   readonly buses: Record<Part, GainNode>;
   /** Saturating input for the drive style; feeds the backing bus. */
   readonly drive: AudioNode;
+  /**
+   * The backing's piano notes, into the backing bus with the rest of the band, lifted to the level
+   * they had on the piano bus, so the Backing dial turns them down and the Piano level doesn't.
+   */
+  readonly backingPiano: AudioNode;
 
   constructor() {
     this.ctx = new AudioContext({ latencyHint: 'interactive' });
@@ -53,6 +58,11 @@ export class Engine {
     trim.gain.value = 0.5;
     shaper.connect(trim).connect(this.buses.backing);
     this.drive = shaper;
+
+    const lift = ctx.createGain();
+    lift.gain.value = MIX.piano / MIX.backing;
+    lift.connect(this.buses.backing);
+    this.backingPiano = lift;
   }
 
   get now(): number {

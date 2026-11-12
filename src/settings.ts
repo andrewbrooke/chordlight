@@ -1,4 +1,5 @@
 import { type AmpSettings, FLAT } from './audio/amp-model.js';
+import { DRY, type FxSettings } from './audio/fx-model.js';
 import type { Layout } from './input/keys.js';
 import type { Binding } from './input/midi.js';
 import type { Style } from './presets/library.js';
@@ -23,6 +24,8 @@ export interface Settings {
   guitarOn: boolean;
   guitarDevice: string;
   amp: AmpSettings;
+  /** The piano's effects. */
+  fx: FxSettings;
   home: number;
   mood: MoodId;
   /** Library preset id, `mine:<name>`, or '' after editing. */
@@ -52,7 +55,15 @@ export interface Settings {
   midiFull: boolean;
   midiButtons: Partial<Record<MidiButton, Binding>>;
   why: boolean;
-  levels: { piano: number; guitar: number; backing: number; bass: number; click: number };
+  /** `band` scales `backing` (the chords) and `bass` together. */
+  levels: {
+    piano: number;
+    guitar: number;
+    backing: number;
+    bass: number;
+    click: number;
+    band: number;
+  };
 }
 
 export const DEFAULTS: Settings = {
@@ -63,6 +74,7 @@ export const DEFAULTS: Settings = {
   guitarDevice: '',
   // Off until the setup asks: a microphone picked by mistake would feed back through speakers.
   amp: { monitor: false, sound: 'clean', ...FLAT },
+  fx: DRY,
   home: 0,
   mood: 'major',
   preset: 'four-chords',
@@ -93,6 +105,7 @@ export const DEFAULTS: Settings = {
     backing: MIX.backing,
     bass: MIX.bass,
     click: MIX.click,
+    band: MIX.band,
   },
 };
 

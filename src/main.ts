@@ -4,6 +4,7 @@ import { PLAY } from './tuning.js';
 import { bindClips } from './ui/clips.js';
 import { bindControls } from './ui/controls.js';
 import { $ } from './ui/dom.js';
+import { bindEffects } from './ui/effects.js';
 import { bindGuitar } from './ui/guitar.js';
 import { bindLane } from './ui/lane.js';
 import { bindMenu } from './ui/menu.js';
@@ -20,6 +21,7 @@ bindPalette(app);
 bindWhy(app);
 bindClips(app);
 bindGuitar(app, new GuitarSetup(app));
+bindEffects(app);
 bindTour(app);
 
 // A first visit gets the start card, which offers the tour; any key takes it too, except Esc.

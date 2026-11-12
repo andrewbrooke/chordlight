@@ -6,6 +6,7 @@
 import type { App } from '../app.js';
 import { COMPACT, TOUR } from '../tuning.js';
 import { $, el } from './dom.js';
+import { openEffects } from './effects.js';
 import { openMenu, shownBy } from './menu.js';
 import { load, save } from './storage.js';
 import { grow, placeCardFor, type Rect, union } from './tour-place.js';
@@ -32,6 +33,8 @@ let stopTour: (() => void) | null = null;
 export function bindTour(app: App): void {
   $('#tour-again').addEventListener('click', (e) => {
     $('#settings').hidden = true;
+    // It stands where the explanations go, which the tour points at.
+    openEffects(false);
     (e.currentTarget as HTMLElement).blur();
     startTour(app);
   });

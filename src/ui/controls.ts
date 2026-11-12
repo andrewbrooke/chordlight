@@ -3,9 +3,10 @@ import { PRESETS } from '../presets/library.js';
 import { type LabelMode, RANGES } from '../settings.js';
 import { nameOf } from '../theory/pitch.js';
 import { moodOf, type MoodId, spellKey } from '../theory/scales.js';
-import { CLIPS, TIMING } from '../tuning.js';
+import { CLIPS, MIX, TIMING } from '../tuning.js';
 import type { Layout } from '../input/layouts.js';
 import { $, el, onPick, onToggle, options } from './dom.js';
+import { effectsOpen, openEffects } from './effects.js';
 
 /** What each layout's rows play; `x` is a key cap. */
 const LAYOUT_HELP: Record<Layout, string> = {
@@ -14,6 +15,9 @@ const LAYOUT_HELP: Record<Layout, string> = {
     'the letter row `Q`–`]` plays the white keys from C, so `Q` `E` `T` is C major; the numbers above play the black keys between.',
   rows: 'every key is a half step: the letter row `Q`–`]` plays C up to B, and the number row `1`–`=` carries on an octave higher.',
 };
+
+/** Level sliders bound here, each `#level-<part>`; the guitar's is in the guitar panel. */
+const LEVELS = ['piano', 'backing', 'bass', 'click', 'band'] as const;
 
 /** Text with `x` spans set as code. */
 const withCaps = (text: string): (Node | string)[] =>
@@ -119,7 +123,8 @@ export function bindControls(app: App): void {
     ['4', 'a bar ahead'],
   ]);
   onPick(look, (v) => app.set({ lookAhead: Number(v) }));
-  for (const part of ['piano', 'backing', 'bass', 'click'] as const) {
+  $<HTMLInputElement>('#level-band').max = String(MIX.bandMost);
+  for (const part of LEVELS) {
     const input = $<HTMLInputElement>(`#level-${part}`);
     input.addEventListener('input', () => {
       app.set({ levels: { ...app.s.levels, [part]: Number(input.value) } });
@@ -137,7 +142,11 @@ export function bindControls(app: App): void {
   drawer('#clips', '#clips-open', '#clips-close');
   const why = $<HTMLButtonElement>('#why-open');
   why.addEventListener('click', () => {
-    app.set({ why: !app.s.why });
+    // The effects panel stands in the explanations' place, so ? brings them back first.
+    if (effectsOpen()) {
+      openEffects(false);
+      if (!app.s.why) app.set({ why: true });
+    } else app.set({ why: !app.s.why });
     why.blur();
   });
 
@@ -182,8 +191,9 @@ export function bindControls(app: App): void {
     $<HTMLInputElement>('#pedal-reversed').checked = s.pedalReversed;
     $<HTMLInputElement>('#midi-full').checked = s.midiFull;
     look.value = String(s.lookAhead);
-    for (const part of ['piano', 'backing', 'bass', 'click'] as const) {
-      $<HTMLInputElement>(`#level-${part}`).value = String(s.levels[part]);
+    for (const part of LEVELS) {
+      const input = $<HTMLInputElement>(`#level-${part}`);
+      if (document.activeElement !== input) input.value = String(s.levels[part]);
     }
     seconds.value = String(s.clipSeconds);
     $('#legend-star').hidden = s.mode !== 'key' || moodOf(s.mood).moodDegree === null;

@@ -1,8 +1,9 @@
 // Plays the rendered piano: each note repitches the nearest rendered root by at most a semitone.
 //
 // Voices have an owner, so releasing a key never cuts a backing or clip note of the same pitch,
-// and the sustain pedal only holds the player's notes. Until a note's buffer arrives from the
-// workers, a plain triangle plays in its place.
+// and the sustain pedal only holds the player's notes. The player's notes, live or in a clip, go
+// out through `played` (the effects); the backing's go to the backing bus with the rest of the band.
+// Until a note's buffer arrives from the workers, a plain triangle plays in its place.
 
 import { PIANO } from '../tuning.js';
 import type { Engine } from './engine.js';
@@ -33,7 +34,10 @@ export class Piano {
   private expected = 0;
   onProgress: (fraction: number) => void = () => {};
 
-  constructor(private readonly engine: Engine) {}
+  constructor(
+    private readonly engine: Engine,
+    private readonly played: AudioNode = engine.buses.piano,
+  ) {}
 
   load(): void {
     const ctx = this.engine.ctx;
@@ -87,7 +91,11 @@ export class Piano {
     } else {
       source = this.standIn(midi, time, filter);
     }
-    filter.connect(gain).connect(pan).connect(this.engine.buses.piano);
+    const mine = owner === 'user' || owner === 'clip';
+    filter
+      .connect(gain)
+      .connect(pan)
+      .connect(mine ? this.played : this.engine.backingPiano);
     source.start(time);
     source.stop(time + durationOf(midi) + 0.05);
 

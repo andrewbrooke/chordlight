@@ -36,7 +36,7 @@ piano's sound, `npm run render` writes WAV files to `var/render/`; for the guita
 | --------------- | ------------------------------------------------------------------------- |
 | `src/theory/`   | keys, spelling, chords, recognition, Roman numerals, scale choice, lights |
 | `src/presets/`  | the preset progressions and guitar tunings                                |
-| `src/audio/`    | piano and plucked-string synthesis, the guitar amp, backing, transport    |
+| `src/audio/`    | piano and plucked-string synthesis, effects, the guitar amp, backing      |
 | `src/view/`     | the three.js keyboard and guitar neck                                     |
 | `src/input/`    | computer keyboard, pointer and MIDI input                                 |
 | `src/listen/`   | guitar input: the note detector, its worklet, and the setup's measures    |
@@ -50,7 +50,7 @@ piano's sound, `npm run render` writes WAV files to `var/render/`; for the guita
 - **No bundler.** The browser loads `dist/` directly through the import map in `index.html`, so
   imports within `src/` are relative and end in `.js`. `tools/smoke/modules.mjs` checks this.
 - **Pure modules stay pure.** `src/theory/`, `src/presets/`, `src/audio/piano-model.ts`,
-  `guitar-model.ts`, `amp-model.ts`, `timeline.ts`, `voicing.ts`, `plan.ts`, `src/input/layouts.ts`,
+  `guitar-model.ts`, `amp-model.ts`, `fx-model.ts`, `timeline.ts`, `voicing.ts`, `plan.ts`, `src/input/layouts.ts`,
   `src/view/neck-layout.ts` and `framing.ts`, `src/listen/` except `input.ts` and `link.ts`,
   `src/clips/extract.ts`, `backing.ts`, `file.ts`, `realise.ts`, `midifile.ts`, `score.ts`,
   `notate.ts`, `engrave.ts`, `pdf.ts` and `sheet.ts`, and `src/ui/tour-steps.ts` and
@@ -65,6 +65,10 @@ piano's sound, `npm run render` writes WAV files to `var/render/`; for the guita
 - **The amp is one chain, built twice.** `src/audio/amp-model.ts` is the chain as data; the page
   builds it as Web Audio nodes and `AmpModel` runs it offline. `tools/smoke/amp.mjs` holds the
   sounds equally loud and distinct, so re-run it after changing a sound in `tuning.ts`.
+- **The piano's effects are built once.** `src/audio/effects.ts` makes every node up front and a
+  setting only moves values, so nothing is rebuilt under a ringing note. What isn't Web Audio (the
+  EQ's filters, the drive's make-up, the reverb's impulse, the presets) is in
+  `src/audio/fx-model.ts`, which `tools/smoke/effects.mjs` checks.
 - **Constants go in `src/tuning.ts`.**
 - **Spelling comes from the key, not the pitch.** F major has B♭, never A♯.
 - **Progressions are stored as Roman numerals**, so changing the key transposes them.

@@ -8,7 +8,7 @@ import { COMPACT } from '../tuning.js';
 import { $ } from './dom.js';
 
 /** Buttons in the drawer that open something else, which the drawer would cover. */
-const OPENERS = '#settings-open, #clips-open, #guitar-open, #edit-open';
+const OPENERS = '#settings-open, #clips-open, #guitar-open, #fx-open, #edit-open';
 
 let setOpen: (open: boolean) => void = () => {};
 

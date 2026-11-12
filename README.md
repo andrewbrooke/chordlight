@@ -18,7 +18,8 @@ each note is lit the way it is.
   and the Andalusian cadence, or type your own as Roman numerals (`I V vi IV`) or chord names
   (`C G Am F`), where `:2` makes a chord last two beats and `^` or `_` voices it an inversion
   higher or lower. Backing styles are pad, piano, arpeggio and drive, with optional bass, click
-  and count-in. The next chord's notes are marked just before it arrives.
+  and count-in, and a Backing dial for the band's volume. The next chord's notes are marked just
+  before it arrives.
 - **The editor:** hear any chord before adding it, from the key's own chords, borrowed ones, any
   root and type, or the chords that sound good after your last one, each with the reason why.
   **Roll** makes a random four-chord progression from the same suggestions, one that loops.
@@ -37,6 +38,11 @@ each note is lit the way it is.
   you play, lights it on the neck, can play it through a built-in amp, and records it into clips
   and MIDI files like anything else. See [Guitar mode](#guitar-mode).
 - **Synthesised piano:** no samples to download. All sound is generated in the browser.
+- **Effects for the piano:** drive, EQ (bass, middle and treble, and low and high cuts, with the
+  curve drawn), chorus, tremolo or a pan between the speakers, echo (in time with the tempo or
+  free, and bouncing left and right) and reverb, with presets from a small room to underwater.
+  **Effects** in the top bar opens them beside the keys, so you can play while you change them.
+  What you play goes through them, and clips of it play back through them; the backing doesn't.
 - **Input:** computer keyboard, mouse or touch, MIDI keyboards, and a guitar through an audio
   interface.
 - **Phones and tablets:** on a small screen the controls fold behind a ☰ menu, leaving the mode,
